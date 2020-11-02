@@ -70,8 +70,6 @@ async def startup_event():
 @app.get("/{rawEcli}")
 def ecli(rawEcli):
     ecli = rawEcli.split(':')
-    logger.info(f"{ecli}")
-    logger.info(ecli)
     try:
         assert(ecli[0] == 'ECLI')
         assert(ecli[1] == 'BE')
