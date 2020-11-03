@@ -168,6 +168,10 @@ def nav_ecli_country(COUNTRY, accept: Optional[str] = Header(None)):
 
     Country navigation : collection of available court codes
     """
+    try:
+        assert(COUNTRY == 'BE')
+    except AssertionError:
+        raise HTTPException(status_code=400, detail="Item not found")
 
     collection = [{'name' : x['name'], 'href' : '%s/ECLI/%s/%s/' % (config['root'], COUNTRY, x['code']), 'rel':''}
         for x in config['ecli'][COUNTRY].values() ]
@@ -188,11 +192,11 @@ def nav_ecli_country(COUNTRY, accept: Optional[str] = Header(None)):
 
 
 @app.get("/ECLI/{COUNTRY}/{CODE}/")
-def nav_ecli_country(COUNTRY, CODE, accept: Optional[str] = Header(None)):
+def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
     """
     Navigation :
 
-    Country navigation : collection of available court codes
+    Court navigation : collection of available years for a particular court
     """
 
     try:
@@ -220,11 +224,11 @@ def nav_ecli_country(COUNTRY, CODE, accept: Optional[str] = Header(None)):
 
 
 @app.get("/ECLI/{COUNTRY}/{CODE}/{YEAR}/")
-def nav_ecli_country(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
+def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     """
     Navigation :
 
-    Country navigation : collection of available court codes
+    Year navigation : available documents for specified year
     """
 
     try:
