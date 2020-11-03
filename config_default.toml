@@ -10,3 +10,4 @@ code="BE"
         [ecli.BE.RVSCDE]
             code = "RVSCDE"
             name = "Council of State"
+            def_file = "RVSCDE_def.json"
