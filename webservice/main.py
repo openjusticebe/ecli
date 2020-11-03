@@ -137,7 +137,7 @@ def nav_ecli(accept: Optional[str] = Header(None)):
 
     Root of ECLI navigation
     """
-    links = [{'rel' : x['name'].lower(), 'href': '%s/ECLI/%s/' % (config['root'], x['code'])} for x in config['countries']]
+    links = [{'rel' : x['name'], 'href': '%s/ECLI/%s/' % (config['root'], x['code'])} for x in config['countries']]
     links.append({ 'rel' : 'self', 'href' : "%s/ECLI/" % config['root'] })
     links.append({ 'rel' : 'documentation', 'href' : "https://eur-lex.europa.eu/content/help/faq/ecli.html"})
 
@@ -166,8 +166,8 @@ def nav_ecli(COUNTRY, accept: Optional[str] = Header(None)):
     links = [{'rel' : x['name'], 'href' : '%s/ECLI/%s/%s' % (config['root'], COUNTRY, x['code'])}
         for x in config['ecli'][COUNTRY].values() ]
 
-    links.append({ 'rel' : 'self', 'href' : "%s/ECLI/%s" % (config['root'], COUNTRY) })
-    links.append({ 'rel' : 'parent', 'href' : "%s/ECLI/%s" % (config['root'], COUNTRY) })
+    links.append({ 'rel' : 'self', 'href' : "%s/ECLI/%s/" % (config['root'], COUNTRY) })
+    links.append({ 'rel' : 'parent', 'href' : "%s/ECLI/" % (config['root']) })
 
     response = {
         'status' : status_get(),
