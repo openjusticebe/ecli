@@ -3,6 +3,9 @@ This component lists and provides access to Belgian case law, using the European
 
 🚧 Under construction 🚧
 
+## Navigation
+Based on previous experience with [dpserv](https://github.com/PieterjanMontens/dpserv_client), this component provides navigation acces to belgian case law through a [content-negotiated](https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation) [HATEOAS](https://fr.wikipedia.org/wiki/HATEOAS) [RESTful](https://en.wikipedia.org/wiki/Representational_state_transfer) interface.
+
 ## Examples
 
 * Council of state : [ECLI:BE:RVSCDE:2020:247.760](https://ecli.openjustice.be/ECLI:BE:RVSCDE:2020:247.760)
