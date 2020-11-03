@@ -163,10 +163,11 @@ def nav_ecli(COUNTRY, accept: Optional[str] = Header(None)):
     Country navigation
     """
 
-    links = [{'rel' : x['name'].lower(), 'href' : '%s/ECLI/%s/%s' % (config['root'], COUNTRY, x['code'])}
+    links = [{'rel' : x['name'], 'href' : '%s/ECLI/%s/%s' % (config['root'], COUNTRY, x['code'])}
         for x in config['ecli'][COUNTRY].values() ]
 
     links.append({ 'rel' : 'self', 'href' : "%s/ECLI/%s" % (config['root'], COUNTRY) })
+    links.append({ 'rel' : 'parent', 'href' : "%s/ECLI/%s" % (config['root'], COUNTRY) })
 
     response = {
         'status' : status_get(),
