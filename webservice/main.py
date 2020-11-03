@@ -105,7 +105,7 @@ def ecli(ECLI):
     ECLI Demonstrator : access documents with their ECLI identifier by
     forwarding to the original document.
 
-    Example:
+    Examples:
 
         * ECLI:BE:RVSCDE:2020:247.760
         * ECLI:BE:CC:2020:141
@@ -131,11 +131,11 @@ def ecli(ECLI):
 
 
 @app.get("/ECLI/")
-def nav_ecli(accept: Optional[str] = Header(None)):
+def nav_ecli_root(accept: Optional[str] = Header(None)):
     """
     Navigation :
 
-    Root of ECLI navigation
+    Root of ECLI navigation : collection of available countries
     """
     links = [{'rel' : x['name'], 'href': '%s/ECLI/%s/' % (config['root'], x['code'])} for x in config['countries']]
     links.append({ 'rel' : 'self', 'href' : "%s/ECLI/" % config['root'] })
@@ -156,11 +156,11 @@ def nav_ecli(accept: Optional[str] = Header(None)):
     return negotiate(response, accept)
 
 @app.get("/ECLI/{COUNTRY}/")
-def nav_ecli(COUNTRY, accept: Optional[str] = Header(None)):
+def nav_ecli_country(COUNTRY, accept: Optional[str] = Header(None)):
     """
     Navigation :
 
-    Country navigation
+    Country navigation : collection of available court codes
     """
 
     links = [{'rel' : x['name'], 'href' : '%s/ECLI/%s/%s' % (config['root'], COUNTRY, x['code'])}
