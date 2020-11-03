@@ -1,0 +1,12 @@
+[[countries]]
+name="Belgium"
+code="BE"
+
+[ecli]
+    [ecli.BE]
+        [ecli.BE.CC]
+            code = "CC"
+            name = "Constitutional Court"
+        [ecli.BE.RVSCDE]
+            code = "RVSCDE"
+            name = "Council of State"
