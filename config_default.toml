@@ -4,8 +4,8 @@ code="BE"
 
 [ecli]
     [ecli.BE]
-        [ecli.BE.CC]
-            code = "CC"
+        [ecli.BE.GHCC]
+            code = "GHCC"
             name = "Constitutional Court"
         [ecli.BE.RVSCDE]
             code = "RVSCDE"

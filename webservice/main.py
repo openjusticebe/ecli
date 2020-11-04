@@ -19,7 +19,8 @@ from pydantic import BaseModel, Field, IPvAnyAddress, Json, PositiveInt
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from datetime import datetime
-from webservice.lib_misc import content_to_html, content_to_plain, rvs_content
+from webservice.lib_misc import content_to_html, content_to_plain
+import webservice.lib_collections as collections
 
 sys.path.append(os.path.dirname(__file__))
 VERSION = 1
@@ -63,9 +64,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-rvs_data = rvs_content()
-logger.info('RVS rows: %s', len(rvs_data))
-
 def status_get():
     now = datetime.now(pytz.utc)
     delta = now - START_TIME
@@ -92,6 +90,11 @@ def negotiate(data, accept):
     #     return msgpack.packb(data, use_bin_type=True)
     return PlainTextResponse(content_to_plain(data))
 
+def count():
+    # FIXME: this should rather become a decorator
+    global COUNTER
+    COUNTER += 1
+
 # ############################################################### SERVER ROUTES
 # #############################################################################
 @app.on_event("startup")
@@ -114,6 +117,7 @@ def ecli(ECLI):
         * ECLI:BE:CC:2020:141
         * ECLI:BE:CTLIE:2017:ARR.20170718.3
     """
+    count()
     parts = ECLI.split(':')
     try:
         assert(parts[0] == 'ECLI')
@@ -126,8 +130,10 @@ def ecli(ECLI):
         arr_num = name[1]
         return RedirectResponse(f"http://www.raadvst-consetat.be/arr.php?nr={arr_num}")
 
-    if parts[2] == 'CC':
-        url = f"https://www.const-court.be/public/f/{parts[3]}/{parts[3]}-{parts[4]}f.pdf"
+    if parts[2] == 'GHCC':
+        name = parts[4].split('.')
+        arr_num = name[1]
+        url = f"https://www.const-court.be/public/f/{parts[3]}/{parts[3]}-{arr_num}.pdf"
         return RedirectResponse(url)
 
     url = f"https://iubel.be/IUBELcontent/ViewDecision.php?id={ECLI}"
@@ -141,7 +147,10 @@ def nav_ecli_root(accept: Optional[str] = Header(None)):
 
     Root of ECLI navigation : collection of available countries
     """
-    collection = [{'name' : x['name'], 'href': '%s/ECLI/%s/' % (config['root'], x['code']), 'rel':''} for x in config['countries']]
+    count()
+    # collection = [{'name' : x['name'], 'href': '%s/ECLI/%s/' % (config['root'], x['code']), 'rel':''} for x in config['countries']]
+    collection = collections.root(config)
+
     links = []
     links.append({ 'rel' : 'self', 'href' : "%s/ECLI/" % config['root'] })
     links.append({ 'rel' : 'documentation', 'href' : "https://eur-lex.europa.eu/content/help/faq/ecli.html"})
@@ -168,22 +177,21 @@ def nav_ecli_country(COUNTRY, accept: Optional[str] = Header(None)):
 
     Country navigation : collection of available court codes
     """
-    try:
-        assert(COUNTRY == 'BE')
-    except AssertionError:
-        raise HTTPException(status_code=400, detail="Item not found")
+    count()
 
-    collection = [{'name' : x['name'], 'href' : '%s/ECLI/%s/%s/' % (config['root'], COUNTRY, x['code']), 'rel':''}
-        for x in config['ecli'][COUNTRY].values() ]
+    # Check if country is in supported country list
+    if all(c['code'] != COUNTRY for c in config['countries']):
+        raise HTTPException(status_code=400, detail=f"Country '{COUNTRY}' not available")
 
     links = []
     links.append({ 'rel' : 'self', 'href' : "%s/ECLI/%s/" % (config['root'], COUNTRY) })
     links.append({ 'rel' : 'parent', 'href' : "%s/ECLI/" % (config['root']) })
+    links.append({ 'rel' : 'root', 'href' : "%s/ECLI/" % (config['root']) })
 
     response = {
         'status' : status_get(),
         'links' : links,
-        'collection': collection,
+        'collection': collections.country(config, COUNTRY),
         'content' : [
         ]
     }
@@ -198,24 +206,27 @@ def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
 
     Court navigation : collection of available years for a particular court
     """
+    count()
 
-    try:
-        assert(COUNTRY == 'BE')
-        assert(CODE == 'RVSCDE')
-    except AssertionError:
-        raise HTTPException(status_code=400, detail="Item not found")
+    # Check if country is in supported country list
+    if all(c['code'] != COUNTRY for c in config['countries']):
+        raise HTTPException(status_code=400, detail=f"Country '{COUNTRY}' not available")
 
-    collection = [{'name' : x, 'href' : '%s/ECLI/%s/%s/%s/' % (config['root'], COUNTRY, CODE, x), 'rel':''}
-        for x in rvs_data.keys() ]
+    # Check if code is in country supported court list
+    if CODE not in config['ecli'][COUNTRY] :
+        raise HTTPException(status_code=400, detail=f"Court '{CODE}' not available in '{COUNTRY}'")
+
+    Court = collections.getCourt(config, COUNTRY, CODE)
 
     links = []
     links.append({ 'rel' : 'self', 'href' : "%s/ECLI/%s/%s/" % (config['root'], COUNTRY, CODE) })
     links.append({ 'rel' : 'parent', 'href' : "%s/ECLI/%s/" % (config['root'], COUNTRY) })
+    links.append({ 'rel' : 'root', 'href' : "%s/ECLI/" % (config['root']) })
 
     response = {
         'status' : status_get(),
         'links' : links,
-        'collection': collection,
+        'collection': Court.getYears(config),
         'content' : [
         ]
     }
@@ -230,37 +241,31 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
 
     Year navigation : available documents for specified year
     """
+    count()
 
-    try:
-        assert(COUNTRY == 'BE')
-        assert(CODE == 'RVSCDE')
-        assert(YEAR in rvs_data)
-    except AssertionError:
-        raise HTTPException(status_code=400, detail="Item not found")
+    # Check if country is in supported country list
+    if all(c['code'] != COUNTRY for c in config['countries']):
+        raise HTTPException(status_code=400, detail=f"Country '{COUNTRY}' not available")
 
-    collection = []
-    for record in rvs_data[YEAR]:
-        name = '{dtype}.{num}'.format(
-            dtype=record['type'].upper(),
-            num=record['num']
-        )
-        ecli = f"ECLI:{COUNTRY}:{CODE}:{YEAR}:{name}"
-        collection.append({
-            'name': name,
-            'href': '%s/%s' % (config['root'], ecli),
-            'rel' : 'nofollow',
-            #'href': 'http://www.raadvst-consetat.be/arr.php?nr=%s' % record['num']
-            #'href': '%s/ECLI/%s/%s/%s/%s/' % (config['root'], COUNTRY, CODE, YEAR, name)
-        })
+    # Check if code is in country supported court list
+    if CODE not in config['ecli'][COUNTRY] :
+        raise HTTPException(status_code=400, detail=f"Court '{CODE}' not available in '{COUNTRY}'")
+
+    Court = collections.getCourt(config, COUNTRY, CODE)
+
+    # Check if year is in court supported years list
+    if not Court.checkYear(YEAR):
+        raise HTTPException(status_code=400, detail=f"Year '{YEAR}' not available in '{COUNTRY}', Court '{CODE}'")
 
     links = []
     links.append({ 'rel' : 'self', 'href' : "%s/ECLI/%s/%s/%s/" % (config['root'], COUNTRY, CODE, YEAR) })
     links.append({ 'rel' : 'parent', 'href' : "%s/ECLI/%s/%s/" % (config['root'], COUNTRY, CODE) })
+    links.append({ 'rel' : 'root', 'href' : "%s/ECLI/" % (config['root']) })
 
     response = {
         'status' : status_get(),
         'links' : links,
-        'collection': collection,
+        'collection': Court.getDocuments(config, YEAR),
         'content' : [
         ]
     }
