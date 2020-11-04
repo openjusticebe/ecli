@@ -1,3 +1,4 @@
+# https://e-justice.europa.eu/fileDownload.do?id=48fe934e-beb6-4ef0-a7a7-26cba643dae3
 [[countries]]
 name="Belgium"
 code="BE"
@@ -11,3 +12,176 @@ code="BE"
             code = "RVSCDE"
             name = "Council of State"
             def_file = "RVSCDE_def.json"
+        [ecli.BE.CASS]
+            code = "CASS"
+            name = "Court of Cassation"
+        [ecli.BE.CABRL]
+            code = "CABRL"
+            name = "Cour d'appel du ressort de Bruxelles"
+        [ecli.BE.CALIE]
+            code = "CALIE"
+            name = "Cour d'appel du ressort de Liège"
+        [ecli.BE.CAMON]
+            code = "CAMON"
+            name = "Cour d'appel du ressort de Mons"
+        [ecli.BE.HBANT]
+            code = "HBANT"
+            name = "Cour d'appel du ressort d'Anvers"
+        [ecli.BE.HBGNT]
+            code = "HBGNT"
+            name = "Cour d'appel du ressort de Gand"
+        [ecli.BE.AHANT]
+            code = "AHANT"
+            name = "Cour du travail d'Anvers et division Hasselt"
+        [ecli.BE.AHGNT]
+            code = "AHGNT"
+            name = "Cour du travail de Gand et division Bruges"
+        [ecli.BE.CTBRL]
+            code = "CTBRL"
+            name = "Cour du travail de Bruxelles"
+        [ecli.BE.CTLIE]
+            code = "CTLIE"
+            name = "Cour du travail de Liège et divisions Namur - Neufchâteau"
+        [ecli.BE.CTMON]
+            code = "CTMON"
+            name = "Cour du travail de Mons"
+
+        [ecli.BE.EAANT]
+            code = "EAANT"
+            name = "Tribunal de première instance d'Anvers"
+        [ecli.BE.EAWVL]
+            code = "EAWVL"
+            name = "Tribunal de première instance de Flandre Occidentale"
+        [ecli.BE.EAOVL]
+            code = "EAOVL"
+            name = "Tribunal de première instance de Flandre Orientale"
+        [ecli.BE.EALIM]
+            code = "EALIM"
+            name = "Tribunal de première instance du Limbourg"
+        [ecli.BE.EALEU]
+            code = "EALEU"
+            name = "Tribunal de première instance de Louvain"
+        [ecli.BE.EABRL]
+            code = "EABRL"
+            name = "Tribunal de première instance néerlandophone de Bruxelles"
+        [ecli.BE.PIBRL]
+            code = "PIBRL"
+            name = "Tribunal de première instance francophone de Bruxelles"
+        [ecli.BE.PIHAI]
+            code = "PIHAI"
+            name = "Tribunal de première instance du Hainaut"
+        [ecli.BE.PINAM]
+            code = "PINAM"
+            name = "Tribunal de première instance de Namur"
+        [ecli.BE.TREUP]
+            code = "TREUP"
+            name = "Tribunal d'Eupen"
+        [ecli.BE.PILIE]
+            code = "PILIE"
+            name = "Tribunal de première instance de Liège"
+        [ecli.BE.PILUX]
+            code = "PILUX"
+            name = "Tribunal de première instance du Luxembourg"
+        [ecli.BE.PIBRW]
+            code = "PIBRW"
+            name = "Tribunal de première instance du Brabant Wallon"
+        [ecli.BE.ARANT]
+            code = "ARANT"
+            name = "Tribunal du travail d'Anvers"
+        [ecli.BE.ARGNT]
+            code = "ARGNT"
+            name = "Tribunal du travail de Gand"
+        [ecli.BE.ARLEU]
+            code = "ARLEU"
+            name = "Tribunal du travail de Louvain"
+        [ecli.BE.ARBRL]
+            code = "ARBRL"
+            name = "Tribunal du travail néerlandophone de Bruxelles"
+        [ecli.BE.TTBRL]
+            code = "TTBRL"
+            name = "Tribunal du travail francophone de Bruxelles"
+        # [ecli.BE.TREUP]
+        #     code = "TREUP"
+        #     name = "Tribunal d'Eupen"
+        [ecli.BE.TTHAI]
+            code = "TTHAI"
+            name = "Tribunal du travail du Hainaut"
+        [ecli.BE.TTLIE]
+            code = "TTLIE"
+            name = "Tribunal du travail de Liège"
+        [ecli.BE.TTBRW]
+            code = "TTBRW"
+            name = "Tribunal du travail du Brabant Wallon"
+        [ecli.BE.KHANT]
+            code = "KHANT"
+            name = "Tribunal de Commerce d'Anvers"
+        [ecli.BE.KHBRL]
+            code = "KHBRL"
+            name = "Tribunal de Commerce néerlandophone de Bruxelles"
+        [ecli.BE.TCBRL]
+            code = "TCBRL"
+            name = "Tribunal de Commerce francophone de Bruxelles "
+        [ecli.BE.KHLEU]
+            code = "KHLEU"
+            name = "Tribunal de Commerce de Louvain"
+        [ecli.BE.TCBRW]
+            code = "TCBRW"
+            name = "Tribunal de Commerce du Brabant Wallon "
+        [ecli.BE.KHGNT]
+            code = "KHGNT"
+            name = "Tribunal de Commerce de Gand"
+        # [ecli.BE.TREUP]
+        #     code = "TREUP"
+        #     name = "Tribunal d'Eupen"
+        [ecli.BE.TCLIE]
+            code = "TCLIE"
+            name = "Tribunal de Commerce de Liège"
+        [ecli.BE.TCHAI]
+            code = "TCHAI"
+            name = "Tribunal de Commerce du Hainaut"
+
+        # Encoding errors
+        [ecli.BE.TELIE]
+            code = "TELIE"
+            name = "Tribunal de Commerce de Liège"
+        [ecli.BE.TEBRL]
+            code = "TEBRL"
+            name = "Tribunal de Commerce francophone de Bruxelles "
+        [ecli.BE.TEBRW]
+            code = "TEBRW"
+            name = "Tribunal de Commerce du Brabant Wallon "
+        [ecli.BE.TEHAI]
+            code = "TEHAI"
+            name = "Tribunal de Commerce du Hainaut"
+
+        [ecli.BE.ORANT]
+            code = "ORANT"
+            name = "Tribunal du travail d'Anvers"
+        [ecli.BE.ORGNT]
+            code = "ORGNT"
+            name = "Tribunal de Commerce de Gand"
+        [ecli.BE.ORBRL]
+            code = "ORBRL"
+            name = "Tribunal du travail néerlandophone de Bruxelles"
+        [ecli.BE.ORLEU]
+            code = "ORLEU"
+            name = "Tribunal du travail de Louvain"
+
+        [ecli.BE.NTRCND]
+            code = "NTRCND"
+            name = "Conseil national de discipline "
+        [ecli.BE.GBAPE]
+            code = "GBAPE"
+            name = "Autorité de protection des données "
+        [ecli.BE.COPRIV]
+            code = "COPRIV"
+            name = "Commission pour la Protection de la Vie privée"
+        [ecli.BE.COHSAV]
+            code = "COHSAV"
+            name = "Commission pour l'aide financière aux victimes d'actes intentionnels de violence et aux sauveteurs occasionnels"
+        [ecli.BE.RSCE]
+            code = "RSCE"
+            name = "Conseil d'État"
+        [ecli.BE.COVHDP]
+            code = "COVHDP"
+            name = "Commission d'indemnisation de la détention préventive inopérante"

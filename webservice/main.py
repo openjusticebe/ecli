@@ -226,7 +226,7 @@ def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
     response = {
         'status' : status_get(),
         'links' : links,
-        'collection': Court.getYears(config),
+        'collection': Court.getYears(config, CODE),
         'content' : [
         ]
     }
@@ -254,7 +254,7 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     Court = collections.getCourt(config, COUNTRY, CODE)
 
     # Check if year is in court supported years list
-    if not Court.checkYear(YEAR):
+    if not Court.checkYear(YEAR, CODE):
         raise HTTPException(status_code=400, detail=f"Year '{YEAR}' not available in '{COUNTRY}', Court '{CODE}'")
 
     links = []
@@ -265,7 +265,7 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     response = {
         'status' : status_get(),
         'links' : links,
-        'collection': Court.getDocuments(config, YEAR),
+        'collection': Court.getDocuments(config, CODE, YEAR),
         'content' : [
         ]
     }
