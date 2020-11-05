@@ -1,5 +1,9 @@
+import re
 import yaml
 import json
+from collections import namedtuple
+ECLI_MASK = re.compile('ECLI:(?P<country>\w*):(?P<code>\w*):(?P<year>\d*):(?P<id>.*)$')
+ECLI = namedtuple('ECLI', ['country', 'court', 'year', 'num', 'raw'])
 
 def content_to_html(data):
     out = ['<!DOCTYPE html>\n<html lang="en"><body>']
@@ -28,4 +32,11 @@ def content_to_html(data):
 def content_to_plain(data):
     return "In construction"
 
-
+def parseECLI(ecli, noException=False):
+    m = ECLI_MASK.match(ecli)
+    if not m:
+        if noException :
+            return False
+        else:
+            raise RuntimeError("Bad ECLI")
+    return ECLI(m.group('country'), m.group('code'), m.group('year'), m.group('id'), ecli)

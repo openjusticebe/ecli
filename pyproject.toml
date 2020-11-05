@@ -15,6 +15,7 @@ pytz = "^2020.4"
 asyncpg = "^0.21.0"
 uvicorn = "^0.12.2"
 msgpack = "^1.0.0"
+requests = "^2.24.0"
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.6.0"

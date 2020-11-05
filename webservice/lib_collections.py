@@ -1,5 +1,7 @@
 import json
 import re
+from webservice.lib_misc import parseECLI
+
 
 def root(config):
     return [
@@ -38,6 +40,25 @@ def getCourt(config, country, court):
         return JUST
 
 
+def getECLICourt(config, ecli):
+    if type(ecli) is str:
+        ecli = parseECLI(ecli)
+
+    if ecli.country != 'BE':
+        return False
+
+    if ecli.court in RVSCDE.getCodes(config):
+        return RVSCDE
+
+    if ecli.court in GHCC.getCodes(config):
+        return GHCC
+
+    if ecli.court in JUST.getCodes(config):
+        return JUST
+
+    return False
+
+
 class JUST:
     country = 'BE'
     data = []
@@ -50,24 +71,29 @@ class JUST:
         {"num": 72214, "year": 1998, "language": "dutch", "type": "arr"}
         """
         data = {}
-        with open('./resources/IUBEL.txt', 'r') as f:
-            mask = re.compile('ECLI:BE:(?P<code>\w*):(?P<year>\d*):(?P<id>.*)$')
 
+        with open('./resources/IUBEL.txt', 'r') as f:
             for line in f :
-                m = mask.match(line)
-                if m :
-                    y = m.group('year')
-                    c = m.group('code')
+                ecli = parseECLI(line, True)
+                if ecli :
+                    y = ecli.year
+                    c = ecli.court
                     if c in data:
                         if y in data[c] :
-                            if m.group('id') not in data[c][y]:
-                                data[c][y].append(m.group('id'))
+                            if ecli.num not in data[c][y]:
+                                data[c][y].append(ecli.num)
                         else:
-                            data[c][y] = [m.group('id')]
+                            data[c][y] = [ecli.num]
                     else:
-                        data[c] = {y : [m.group('id')]}
+                        data[c] = {y : [ecli.num]}
 
         JUST.data = data
+
+    @staticmethod
+    def getUrl(config, eclip, forceType=None):
+        if not forceType:
+            return f"https://iubel.be/IUBELcontent/ViewDecision.php?id={eclip.raw}"
+
 
     @staticmethod
     def getCodes(config):
@@ -114,6 +140,12 @@ class RVSCDE:
              'rel':''}
             for x in RVSCDE.data.keys()
         ]
+
+    @staticmethod
+    def getUrl(config, eclip, forceType=None):
+        name = eclip.num.split('.')
+        arr_num = name[1]
+        return f"http://www.raadvst-consetat.be/arr.php?nr={arr_num}"
 
     @staticmethod
     def getCodes(config):
@@ -169,6 +201,12 @@ class GHCC:
              'rel':''}
             for x in GHCC.data.keys()
         ]
+
+    @staticmethod
+    def getUrl(config, eclip, forceType=None):
+        name = eclip.num.split('.')
+        arr_num = name[1]
+        return f"https://www.const-court.be/public/f/{eclip.year}/{eclip.year}-{arr_num}.pdf"
 
     @staticmethod
     def getCodes(config):

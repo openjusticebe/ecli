@@ -11,6 +11,7 @@ import yaml
 import pytz
 import uvicorn
 import msgpack
+import requests
 from typing import Optional
 from fastapi import Depends, FastAPI, BackgroundTasks, HTTPException, Header
 from fastapi.responses import RedirectResponse, HTMLResponse, PlainTextResponse
@@ -19,7 +20,7 @@ from pydantic import BaseModel, Field, IPvAnyAddress, Json, PositiveInt
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from datetime import datetime
-from webservice.lib_misc import content_to_html, content_to_plain
+from webservice.lib_misc import content_to_html, content_to_plain, parseECLI
 import webservice.lib_collections as collections
 
 sys.path.append(os.path.dirname(__file__))
@@ -95,6 +96,11 @@ def count():
     global COUNTER
     COUNTER += 1
 
+def urlIsPdf(url):
+    r = requests.head(url)
+    return 'application/pdf' in r.headers.get('content-type')
+
+
 # ############################################################### SERVER ROUTES
 # #############################################################################
 @app.on_event("startup")
@@ -118,27 +124,38 @@ def ecli(ECLI):
         * ECLI:BE:CTLIE:2017:ARR.20170718.3
     """
     count()
-    parts = ECLI.split(':')
-    try:
-        assert(parts[0] == 'ECLI')
-        assert(parts[1] == 'BE')
-    except AssertionError:
-        raise HTTPException(status_code=400, detail="Item not found")
-
-    if parts[2] == 'RVSCDE':
-        name = parts[4].split('.')
-        arr_num = name[1]
-        return RedirectResponse(f"http://www.raadvst-consetat.be/arr.php?nr={arr_num}")
-
-    if parts[2] == 'GHCC':
-        name = parts[4].split('.')
-        arr_num = name[1]
-        url = f"https://www.const-court.be/public/f/{parts[3]}/{parts[3]}-{arr_num}.pdf"
-        return RedirectResponse(url)
-
-    url = f"https://iubel.be/IUBELcontent/ViewDecision.php?id={ECLI}"
+    eclip = parseECLI(ECLI)
+    logger.debug(eclip)
+    court = collections.getECLICourt(config, eclip)
+    url = court.getUrl(config, eclip)
     return RedirectResponse(url)
 
+    # try:
+    #     assert(parts[0] == 'ECLI')
+    #     assert(parts[1] == 'BE')
+    # except AssertionError:
+    #     raise HTTPException(status_code=400, detail="Item not found")
+
+    # if parts[2] == 'RVSCDE':
+    #     name = parts[4].split('.')
+    #     arr_num = name[1]
+    #     return RedirectResponse(f"http://www.raadvst-consetat.be/arr.php?nr={arr_num}")
+
+    # if parts[2] == 'GHCC':
+    #     name = parts[4].split('.')
+    #     arr_num = name[1]
+    #     url = f"https://www.const-court.be/public/f/{parts[3]}/{parts[3]}-{arr_num}.pdf"
+    #     return RedirectResponse(url)
+
+    # url = f"https://iubel.be/IUBELcontent/ViewDecision.php?id={ECLI}"
+    # return RedirectResponse(url)
+
+@app.get("/txt/{ECLI}")
+def ecli(ECLI):
+    """
+    Non-negotiated plain text display
+    """
+    pass
 
 @app.get("/ECLI/")
 def nav_ecli_root(accept: Optional[str] = Header(None)):
