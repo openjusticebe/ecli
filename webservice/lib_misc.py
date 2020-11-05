@@ -29,8 +29,10 @@ def content_to_html(data):
 
     return "\n".join(out)
 
+
 def content_to_plain(data):
     return "In construction"
+
 
 def parseECLI(ecli, noException=False):
     m = ECLI_MASK.match(ecli)

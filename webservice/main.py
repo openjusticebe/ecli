@@ -21,6 +21,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from datetime import datetime
 from webservice.lib_misc import content_to_html, content_to_plain, parseECLI
+import webservice.lib_async_tools as a_tools
 import webservice.lib_collections as collections
 
 sys.path.append(os.path.dirname(__file__))
@@ -48,6 +49,7 @@ config = {
     'log_level': os.getenv('LOG_LEVEL', 'info'),
     'proxy_prefix': os.getenv('PROXY_PREFIX', '/'),
     'root' : os.getenv('ROOT_DOMAIN', 'example.com'),
+    'tikaserver': os.getenv('TIKA_SERVER', '0.0.0.0:9998'),
 }
 
 if config['log_level'] == 'debug':
@@ -120,7 +122,7 @@ def ecli(ECLI):
     Examples:
 
         * ECLI:BE:RVSCDE:2020:ARR.247760
-        * ECLI:BE:CC:2020:141
+        * ECLI:BE:GHCC:2020:2020.141f
         * ECLI:BE:CTLIE:2017:ARR.20170718.3
     """
     count()
@@ -130,32 +132,68 @@ def ecli(ECLI):
     url = court.getUrl(config, eclip)
     return RedirectResponse(url)
 
-    # try:
-    #     assert(parts[0] == 'ECLI')
-    #     assert(parts[1] == 'BE')
-    # except AssertionError:
-    #     raise HTTPException(status_code=400, detail="Item not found")
-
-    # if parts[2] == 'RVSCDE':
-    #     name = parts[4].split('.')
-    #     arr_num = name[1]
-    #     return RedirectResponse(f"http://www.raadvst-consetat.be/arr.php?nr={arr_num}")
-
-    # if parts[2] == 'GHCC':
-    #     name = parts[4].split('.')
-    #     arr_num = name[1]
-    #     url = f"https://www.const-court.be/public/f/{parts[3]}/{parts[3]}-{arr_num}.pdf"
-    #     return RedirectResponse(url)
-
-    # url = f"https://iubel.be/IUBELcontent/ViewDecision.php?id={ECLI}"
-    # return RedirectResponse(url)
 
 @app.get("/txt/{ECLI}")
-def ecli(ECLI):
+async def ecli(ECLI):
     """
     Non-negotiated plain text display
+
+    Test with:
+        * should work : ECLI:BE:RVSCDE:2020:ARR.247760
+        * should work : ECLI:BE:GHCC:2020:2020.141f
+        * Doensn't work yet : ECLI:BE:CTLIE:2017:ARR.20170718.3
     """
-    pass
+    count()
+
+    eclip = parseECLI(ECLI)
+    court = collections.getECLICourt(config, eclip)
+    url = court.getUrl(config, eclip)
+    if not urlIsPdf(url):
+        raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
+    data = await a_tools.tika_extract(config, url)
+    return PlainTextResponse(data['markdown'])
+
+
+@app.get("/html/{ECLI}")
+async def ecli(ECLI):
+    """
+    Non-negotiated PDF display
+
+    Test with:
+        * should work : ECLI:BE:RVSCDE:2020:ARR.247760
+        * should work : ECLI:BE:GHCC:2020:2020.141f
+        * Doensn't work yet : ECLI:BE:CTLIE:2017:ARR.20170718.3
+    """
+    count()
+
+    eclip = parseECLI(ECLI)
+    court = collections.getECLICourt(config, eclip)
+    url = court.getUrl(config, eclip)
+    if not urlIsPdf(url):
+        raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
+    data = await a_tools.tika_extract(config, url)
+    return HTMLResponse(data['html'])
+
+
+@app.get("/pdf/{ECLI}")
+async def ecli(ECLI):
+    """
+    Non-negotiated PDF display
+
+    Test with:
+        * should work : ECLI:BE:RVSCDE:2020:ARR.247760
+        * should work : ECLI:BE:GHCC:2020:2020.141f
+        * Doensn't work yet : ECLI:BE:CTLIE:2017:ARR.20170718.3
+    """
+    count()
+
+    eclip = parseECLI(ECLI)
+    court = collections.getECLICourt(config, eclip)
+    url = court.getUrl(config, eclip)
+    if not urlIsPdf(url):
+        raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
+    return RedirectResponse(url)
+
 
 @app.get("/ECLI/")
 def nav_ecli_root(accept: Optional[str] = Header(None)):
@@ -165,7 +203,6 @@ def nav_ecli_root(accept: Optional[str] = Header(None)):
     Root of ECLI navigation : collection of available countries
     """
     count()
-    # collection = [{'name' : x['name'], 'href': '%s/ECLI/%s/' % (config['root'], x['code']), 'rel':''} for x in config['countries']]
     collection = collections.root(config)
 
     links = []
