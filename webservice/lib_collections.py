@@ -114,14 +114,31 @@ class JUST:
         return year in JUST.data[code].keys()
 
     @staticmethod
+    def getDocData(config, eclip):
+        return {
+            'logo' : 'https://www.rechtbanken-tribunaux.be/themes/custom/hoverech/logo.svg',
+            'website' : 'https://iubel.be/IUBELhome/welkom',
+            'court' : eclip.court,
+            'year' : eclip.year,
+            'decision' : eclip.num,
+        }
+
+    @staticmethod
     def getDocuments(config, code, year):
         collection = []
         for name in JUST.data[code][year]:
             ecli = f"ECLI:{JUST.country}:{code}:{year}:{name}"
+
             collection.append({
                 'name': name,
-                'href': '%s/%s' % (config['root'], ecli),
-                'rel' : 'nofollow',
+                'href' : '%s/ECLI/%s/%s/%s/%s' % (
+                    config['root'],
+                    JUST.country ,
+                    code,
+                    year,
+                    name
+                ),
+                'rel' : ''
             })
 
         return collection
@@ -156,7 +173,7 @@ class RVSCDE:
         return year in RVSCDE.data.keys()
 
     @staticmethod
-    def getDocuments(config, _code, year):
+    def getDocuments(config, code, year):
         collection = []
         for record in RVSCDE.data[year]:
             name = '{dtype}.{num}'.format(
@@ -166,11 +183,27 @@ class RVSCDE:
             ecli = f"ECLI:{RVSCDE.country}:{RVSCDE.code}:{year}:{name}"
             collection.append({
                 'name': name,
-                'href': '%s/%s' % (config['root'], ecli),
-                'rel' : 'nofollow',
+                'href' : '%s/ECLI/%s/%s/%s/%s' % (
+                    config['root'],
+                    RVSCDE.country ,
+                    code,
+                    year,
+                    name
+                ),
+                'rel' : ''
             })
 
         return collection
+
+    @staticmethod
+    def getDocData(config, eclip):
+        return {
+            'logo' : 'http://www.raadvst-consetat.be/a/s/logo.gif',
+            'website' : 'http://www.raadvst-consetat.be/',
+            'court' : RVSCDE.code,
+            'year' : eclip.year,
+            'decision' : eclip.num,
+        }
 
     @staticmethod
     def init():
@@ -217,7 +250,7 @@ class GHCC:
         return year in GHCC.data.keys()
 
     @staticmethod
-    def getDocuments(config, _code, year):
+    def getDocuments(config, code, year):
         collection = []
         for record in GHCC.data[year]:
             name = '{year}.{num}{lang}'.format(
@@ -226,13 +259,30 @@ class GHCC:
                 lang = 'f' if record['language'] == 'french' else 'n'
             )
             ecli = f"ECLI:{GHCC.country}:{GHCC.code}:{year}:{name}"
+
             collection.append({
                 'name': name,
-                'href': '%s/%s' % (config['root'], ecli),
-                'rel' : 'nofollow',
+                'href' : '%s/ECLI/%s/%s/%s/%s' % (
+                    config['root'],
+                    GHCC.country ,
+                    code,
+                    year,
+                    name
+                ),
+                'rel' : ''
             })
 
         return collection
+
+    @staticmethod
+    def getDocData(config, eclip):
+        return {
+            'logo' : 'https://www.const-court.be/images/titre_index3.gif',
+            'website' : 'https://www.const-court.be/',
+            'court' : GHCC.code,
+            'year' : eclip.year,
+            'decision' : eclip.num,
+        }
 
     @staticmethod
     def init():

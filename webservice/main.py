@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field, IPvAnyAddress, Json, PositiveInt
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from datetime import datetime
-from webservice.lib_misc import content_to_html, content_to_plain, parseECLI
+from webservice.lib_misc import content_to_html, content_to_plain, parseECLI, buildECLI
 import webservice.lib_async_tools as a_tools
 import webservice.lib_collections as collections
 
@@ -99,7 +99,7 @@ def count():
     COUNTER += 1
 
 def urlIsPdf(url):
-    r = requests.head(url)
+    r = requests.head(url, verify=False)
     return 'application/pdf' in r.headers.get('content-type')
 
 
@@ -326,6 +326,59 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
 
     return negotiate(response, accept)
 
+
+@app.get("/ECLI/{COUNTRY}/{CODE}/{YEAR}/{NUM}")
+def nav_ecli_year(COUNTRY, CODE, YEAR, NUM, accept: Optional[str] = Header(None)):
+    """
+    Navigation :
+
+    Document data sheet : links to ressources, metadata
+    """
+    count()
+
+    eclip = buildECLI(COUNTRY, CODE, YEAR, NUM)
+
+    # Check if country is in supported country list
+    if all(c['code'] != COUNTRY for c in config['countries']):
+        raise HTTPException(status_code=400, detail=f"Country '{COUNTRY}' not available")
+
+    # Check if code is in country supported court list
+    if CODE not in config['ecli'][COUNTRY] :
+        raise HTTPException(status_code=400, detail=f"Court '{CODE}' not available in '{COUNTRY}'")
+
+    Court = collections.getECLICourt(config, eclip)
+
+    # Check if year is in court supported years list
+    if not Court.checkYear(YEAR, CODE):
+        raise HTTPException(status_code=400, detail=f"Year '{YEAR}' not available in '{COUNTRY}', Court '{CODE}'")
+
+    links = []
+    links.append({ 'rel' : 'self', 'href' : "%s/ECLI/%s/%s/%s/%s" % (config['root'], COUNTRY, CODE, YEAR, NUM) })
+    links.append({ 'rel' : 'parent', 'href' : "%s/ECLI/%s/%s/%s/" % (config['root'], COUNTRY, CODE, YEAR) })
+    links.append({ 'rel' : 'root', 'href' : "%s/ECLI/" % (config['root']) })
+
+    docdata = Court.getDocData(config, eclip)
+
+    url = Court.getUrl(config, eclip)
+    content_links = []
+    content_links.append({'rel' : 'original', 'href': url})
+    if urlIsPdf(url):
+        content_links.append({ 'rel' : 'pdf', 'href' : "%s/pdf/%s" % (config['root'], eclip.raw)})
+        content_links.append({ 'rel' : 'txt', 'href' : "%s/txt/%s" % (config['root'], eclip.raw)})
+        content_links.append({ 'rel' : 'html', 'href' : "%s/html/%s" % (config['root'], eclip.raw)})
+    else:
+        content_links.append({ 'rel' : 'meta', 'href' : url})
+
+    response = {
+        'status' : status_get(),
+        'links' : links,
+        'content' : {
+            'data' : Court.getDocData(config, eclip),
+            'links' : content_links,
+        }
+    }
+
+    return negotiate(response, accept)
 
 
 @app.get("/status")
