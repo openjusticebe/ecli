@@ -140,7 +140,7 @@ async def ecli(ECLI):
     Test with:
         * should work : ECLI:BE:RVSCDE:2020:ARR.247760
         * should work : ECLI:BE:GHCC:2020:2020.141f
-        * Doensn't work yet : ECLI:BE:CTLIE:2017:ARR.20170718.3
+        * Doesn't work (yet) : ECLI:BE:CTLIE:2017:ARR.20170718.3
     """
     count()
 
@@ -163,7 +163,7 @@ async def ecli(ECLI):
     Test with:
         * should work : ECLI:BE:RVSCDE:2020:ARR.247760
         * should work : ECLI:BE:GHCC:2020:2020.141f
-        * Doensn't work yet : ECLI:BE:CTLIE:2017:ARR.20170718.3
+        * Doesn't work (yet) : ECLI:BE:CTLIE:2017:ARR.20170718.3
     """
     count()
 
@@ -186,7 +186,7 @@ async def ecli(ECLI):
     Test with:
         * should work : ECLI:BE:RVSCDE:2020:ARR.247760
         * should work : ECLI:BE:GHCC:2020:2020.141f
-        * Doensn't work yet : ECLI:BE:CTLIE:2017:ARR.20170718.3
+        * Doesn't work (yet) : ECLI:BE:CTLIE:2017:ARR.20170718.3
     """
     count()
 
@@ -340,7 +340,7 @@ async def nav_ecli_year(COUNTRY, CODE, YEAR, NUM, accept: Optional[str] = Header
     """
     Navigation :
 
-    Document data sheet : links to ressources, metadata
+    Document data sheet : links to resources, metadata
     """
     count()
 
