@@ -25,7 +25,7 @@ import webservice.lib_async_tools as a_tools
 import webservice.lib_collections as collections
 
 sys.path.append(os.path.dirname(__file__))
-VERSION = 1
+VERSION = "0.1.1"
 START_TIME = datetime.now(pytz.utc)
 COUNTER = 0
 
@@ -75,8 +75,8 @@ def status_get():
     return {
         'all_systems': 'nominal',
         'timestamp': now,
-        'start_time': START_TIME,
-        'uptime': f'{delta_s} seconds | {divmod(delta_s, 60)[0]} minutes | {divmod(delta_s, 86400)[0]} days',
+        'online_since': START_TIME,
+        'online_for_seconds': delta_s,
         'api_version': VERSION,
         'api_counter': COUNTER,
     }
@@ -101,11 +101,6 @@ def count():
     COUNTER += 1
 
 
-def urlIsPdf(url):
-    r = requests.head(url, verify=False)
-    return 'application/pdf' in r.headers.get('content-type')
-
-
 # ############################################################### SERVER ROUTES
 # #############################################################################
 @app.on_event("startup")
@@ -117,8 +112,8 @@ async def startup_event():
     #     DB_POOL = await asyncpg.create_pool(**config['postgresql'])
 
 
-@app.get("/{ECLI}")
-def ecli(ECLI):
+@app.get("/ecli/{ECLI}")
+async def ecli(ECLI):
     """
     ECLI Demonstrator : access documents with their ECLI identifier by
     forwarding to the original document.
@@ -133,7 +128,7 @@ def ecli(ECLI):
     eclip = parseECLI(ECLI)
     logger.debug(eclip)
     court = collections.getECLICourt(config, eclip)
-    url = court.getUrl(config, eclip)
+    url = await court.getUrls(config, eclip, collections.DEFAULT)
     return RedirectResponse(url)
 
 
@@ -151,11 +146,13 @@ async def ecli(ECLI):
 
     eclip = parseECLI(ECLI)
     court = collections.getECLICourt(config, eclip)
-    url = court.getUrl(config, eclip)
-    if not urlIsPdf(url):
+    url = await court.getUrls(config, eclip, collections.PDF)
+    if not await a_tools.urlIsPdf(url):
         raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
     data = await a_tools.tika_extract(config, url)
-    return PlainTextResponse(data['markdown'])
+    if data and 'markdown' in data:
+        return PlainTextResponse(data['markdown'])
+    raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
 
 
 @app.get("/html/{ECLI}")
@@ -172,11 +169,13 @@ async def ecli(ECLI):
 
     eclip = parseECLI(ECLI)
     court = collections.getECLICourt(config, eclip)
-    url = court.getUrl(config, eclip)
-    if not urlIsPdf(url):
+    url = await court.getUrls(config, eclip, collections.PDF)
+    if not await a_tools.urlIsPdf(url):
         raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
     data = await a_tools.tika_extract(config, url)
-    return HTMLResponse(data['html'])
+    if data and 'html' in data:
+        return HTMLResponse(data['html'])
+    raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
 
 
 @app.get("/pdf/{ECLI}")
@@ -193,13 +192,13 @@ async def ecli(ECLI):
 
     eclip = parseECLI(ECLI)
     court = collections.getECLICourt(config, eclip)
-    url = court.getUrl(config, eclip)
-    if not urlIsPdf(url):
+    url = await court.getUrls(config, eclip, collections.PDF)
+    if not await a_tools.urlIsPdf(url):
         raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
     return RedirectResponse(url)
 
 
-@app.get("/ECLI/")
+@app.get("/")
 def nav_ecli_root(accept: Optional[str] = Header(None)):
     """
     Navigation :
@@ -210,8 +209,7 @@ def nav_ecli_root(accept: Optional[str] = Header(None)):
     collection = collections.root(config)
 
     links = []
-    links.append({'rel': 'self', 'href': "%s/ECLI/" % config['root']})
-    links.append()
+    links.append({'rel': 'self', 'href': "/"})
 
     response = {
         'status': status_get(),
@@ -220,11 +218,11 @@ def nav_ecli_root(accept: Optional[str] = Header(None)):
         'content': {
             'links': [
                 {'rel': 'ecli documentation', 'href': "https://eur-lex.europa.eu/content/help/faq/ecli.html"},
-                {'rel': 'API documentation', 'href': "%s/docs%" % config['root']},
-            ]
+                {'rel': 'API documentation', 'href': "/docs"},
+            ],
             'data':
             {
-                'url_template': "%s/{COUNTRY}/" % config['root'],
+                'url_template': "/{COUNTRY}/",
                 'placeholder': '{COUNTRY}',
                 'id': 'country_url_mask'
             },
@@ -234,7 +232,7 @@ def nav_ecli_root(accept: Optional[str] = Header(None)):
     return negotiate(response, accept)
 
 
-@app.get("/ECLI/{COUNTRY}/")
+@app.get("/{COUNTRY}/")
 def nav_ecli_country(COUNTRY, accept: Optional[str] = Header(None)):
     """
     Navigation :
@@ -248,9 +246,9 @@ def nav_ecli_country(COUNTRY, accept: Optional[str] = Header(None)):
         raise HTTPException(status_code=400, detail=f"Country '{COUNTRY}' not available")
 
     links = []
-    links.append({'rel': 'self', 'href': "%s/ECLI/%s/" % (config['root'], COUNTRY)})
-    links.append({'rel': 'parent', 'href': "%s/ECLI/" % (config['root'])})
-    links.append({'rel': 'root', 'href': "%s/ECLI/" % (config['root'])})
+    links.append({'rel': 'self', 'href': "/%s/" % (COUNTRY)})
+    links.append({'rel': 'parent', 'href': "/"})
+    links.append({'rel': 'root', 'href': "/"})
 
     response = {
         'status': status_get(),
@@ -263,7 +261,7 @@ def nav_ecli_country(COUNTRY, accept: Optional[str] = Header(None)):
     return negotiate(response, accept)
 
 
-@app.get("/ECLI/{COUNTRY}/{CODE}/")
+@app.get("/{COUNTRY}/{CODE}/")
 def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
     """
     Navigation :
@@ -283,9 +281,9 @@ def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
     Court = collections.getCourt(config, COUNTRY, CODE)
 
     links = []
-    links.append({'rel': 'self', 'href': "%s/ECLI/%s/%s/" % (config['root'], COUNTRY, CODE)})
-    links.append({'rel': 'parent', 'href': "%s/ECLI/%s/" % (config['root'], COUNTRY)})
-    links.append({'rel': 'root', 'href': "%s/ECLI/" % (config['root'])})
+    links.append({'rel': 'self', 'href': "/%s/%s/" % (COUNTRY, CODE)})
+    links.append({'rel': 'parent', 'href': "/%s/" % (COUNTRY)})
+    links.append({'rel': 'root', 'href': "/"})
 
     response = {
         'status': status_get(),
@@ -298,7 +296,7 @@ def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
     return negotiate(response, accept)
 
 
-@app.get("/ECLI/{COUNTRY}/{CODE}/{YEAR}/")
+@app.get("/{COUNTRY}/{CODE}/{YEAR}/")
 def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     """
     Navigation :
@@ -322,9 +320,9 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
         raise HTTPException(status_code=400, detail=f"Year '{YEAR}' not available in '{COUNTRY}', Court '{CODE}'")
 
     links = []
-    links.append({'rel': 'self', 'href': "%s/ECLI/%s/%s/%s/" % (config['root'], COUNTRY, CODE, YEAR)})
-    links.append({'rel': 'parent', 'href': "%s/ECLI/%s/%s/" % (config['root'], COUNTRY, CODE)})
-    links.append({'rel': 'root', 'href': "%s/ECLI/" % (config['root'])})
+    links.append({'rel': 'self', 'href': "/%s/%s/%s/" % (COUNTRY, CODE, YEAR)})
+    links.append({'rel': 'parent', 'href': "/%s/%s/" % (COUNTRY, CODE)})
+    links.append({'rel': 'root', 'href': "/"})
 
     response = {
         'status': status_get(),
@@ -337,8 +335,8 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     return negotiate(response, accept)
 
 
-@app.get("/ECLI/{COUNTRY}/{CODE}/{YEAR}/{NUM}")
-def nav_ecli_year(COUNTRY, CODE, YEAR, NUM, accept: Optional[str] = Header(None)):
+@app.get("/{COUNTRY}/{CODE}/{YEAR}/{NUM}")
+async def nav_ecli_year(COUNTRY, CODE, YEAR, NUM, accept: Optional[str] = Header(None)):
     """
     Navigation :
 
@@ -363,21 +361,23 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, NUM, accept: Optional[str] = Header(None)
         raise HTTPException(status_code=400, detail=f"Year '{YEAR}' not available in '{COUNTRY}', Court '{CODE}'")
 
     links = []
-    links.append({'rel': 'self', 'href': "%s/ECLI/%s/%s/%s/%s" % (config['root'], COUNTRY, CODE, YEAR, NUM)})
-    links.append({'rel': 'parent', 'href': "%s/ECLI/%s/%s/%s/" % (config['root'], COUNTRY, CODE, YEAR)})
-    links.append({'rel': 'root', 'href': "%s/ECLI/" % (config['root'])})
+    links.append({'rel': 'self', 'href': "/%s/%s/%s/%s" % (COUNTRY, CODE, YEAR, NUM)})
+    links.append({'rel': 'parent', 'href': "/%s/%s/%s/" % (COUNTRY, CODE, YEAR)})
+    links.append({'rel': 'root', 'href': "/"})
 
     docdata = Court.getDocData(config, eclip)
 
-    url = Court.getUrl(config, eclip)
+    urls = await Court.getUrls(config, eclip)
     content_links = []
-    content_links.append({'rel': 'original', 'href': url})
-    if urlIsPdf(url):
-        content_links.append({'rel': 'pdf', 'href': "%s/pdf/%s" % (config['root'], eclip.raw)})
-        content_links.append({'rel': 'txt', 'href': "%s/txt/%s" % (config['root'], eclip.raw)})
-        content_links.append({'rel': 'html', 'href': "%s/html/%s" % (config['root'], eclip.raw)})
-    else:
-        content_links.append({'rel': 'meta', 'href': url})
+    for url in urls:
+        if url['rel'] == 'default':
+            content_links.append({'rel': 'default', 'href': "/ecli/%s" % (eclip.raw)})
+        if url['rel'] == 'pdf' and await a_tools.urlIsPdf(url['href']):
+            content_links.append({'rel': 'pdf', 'href': "/pdf/%s" % (eclip.raw)})
+            content_links.append({'rel': 'txt', 'href': "/txt/%s" % (eclip.raw)})
+            content_links.append({'rel': 'html', 'href': "/html/%s" % (eclip.raw)})
+        if url['rel'] == 'meta':
+            content_links.append({'rel': 'meta', 'href': url['href']})
 
     response = {
         'status': status_get(),

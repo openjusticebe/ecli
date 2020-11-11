@@ -1,12 +1,17 @@
 import json
 import re
 from webservice.lib_misc import parseECLI
+from webservice.lib_async_tools import urlIsPdf
+
+DEFAULT = 'default'
+PDF = 'pdf'
+META = 'meta'
 
 
 def root(config):
     return [
-        {'name' : x['name'],
-         'href': '%s/ECLI/%s/' % (config['root'], x['code']),
+        {'name': x['name'],
+         'href': '/%s/' % (x['code']),
          'rel':''}
         for x in config['countries']
     ]
@@ -15,9 +20,9 @@ def root(config):
 def country(config, country):
     codes = RVSCDE.getCodes(config) + GHCC.getCodes(config) + JUST.getCodes(config)
     cfg = config['ecli'][country]
-    base =  [
-        {'name' : cfg[x]['name'],
-         'href' : '%s/ECLI/%s/%s/' % (config['root'], country, x),
+    base = [
+        {'name': cfg[x]['name'],
+         'href': '/%s/%s/' % (country, x),
          'rel':''}
         for x in codes
     ]
@@ -25,11 +30,12 @@ def country(config, country):
     # for code in JUST.getCodes(config):
     #     base.append({
     #         'name': code,
-    #         'href' : '%s/ECLI/%s/%s/' % (config['root'], country, code),
+    #         'href': '%s/%s/%s/' % (config['root'], country, code),
     #         'rel':''
     #     })
 
     return base
+
 
 def getCourt(config, country, court):
     if country == 'BE' and court == 'RVSCDE':
@@ -59,6 +65,13 @@ def getECLICourt(config, ecli):
     return False
 
 
+def urlGetType(ftype, urls):
+    for url in urls:
+        if url['rel'] == ftype:
+            return url['href']
+    return False
+
+
 class JUST:
     country = 'BE'
     data = []
@@ -73,27 +86,44 @@ class JUST:
         data = {}
 
         with open('./resources/IUBEL.txt', 'r') as f:
-            for line in f :
+            for line in f:
                 ecli = parseECLI(line, True)
-                if ecli :
+                if ecli:
                     y = ecli.year
                     c = ecli.court
                     if c in data:
-                        if y in data[c] :
+                        if y in data[c]:
                             if ecli.num not in data[c][y]:
                                 data[c][y].append(ecli.num)
                         else:
                             data[c][y] = [ecli.num]
                     else:
-                        data[c] = {y : [ecli.num]}
+                        data[c] = {y: [ecli.num]}
 
         JUST.data = data
 
     @staticmethod
-    def getUrl(config, eclip, forceType=None):
-        if not forceType:
-            return f"https://iubel.be/IUBELcontent/ViewDecision.php?id={eclip.raw}"
+    async def getUrls(config, eclip, forceType=None):
+        # TODO: check if pdf exists
+        # https://iubel.be/IUBELwork/ECLI:BE:AHANT:2004:ARR.20040604.5_NL.pdf
+        urls = [
+            {'rel': 'default', 'href': f"https://iubel.be/IUBELcontent/ViewDecision.php?id={eclip.raw}"},
+            {'rel': 'meta', 'href': f"https://iubel.be/IUBELcontent/ViewDecision.php?id={eclip.raw}"}
+        ]
 
+        test_urls = [
+            f"https://iubel.be/IUBELwork/{eclip.raw}_NL.pdf",
+            f"https://iubel.be/IUBELwork/{eclip.raw}_FR.pdf",
+        ]
+
+        for url in test_urls:
+            if await urlIsPdf(url):
+                urls.append({'rel': 'pdf', 'href': url})
+
+        if not forceType:
+            return urls
+
+        return urlGetType(forceType, urls)
 
     @staticmethod
     def getCodes(config):
@@ -102,9 +132,9 @@ class JUST:
     @staticmethod
     def getYears(config, code):
         return [
-            {'name' : x,
-             'href' : '%s/ECLI/%s/%s/%s/' % (config['root'], JUST.country , code, x),
-             'rel':''}
+            {'name': x,
+             'href': '/%s/%s/%s/' % (JUST.country, code, x),
+             'rel': ''}
             for x in JUST.data[code].keys()
 
         ]
@@ -116,11 +146,11 @@ class JUST:
     @staticmethod
     def getDocData(config, eclip):
         return {
-            'logo' : 'https://www.rechtbanken-tribunaux.be/themes/custom/hoverech/logo.svg',
-            'website' : 'https://iubel.be/IUBELhome/welkom',
-            'court' : eclip.court,
-            'year' : eclip.year,
-            'decision' : eclip.num,
+            'logo': 'https://www.rechtbanken-tribunaux.be/themes/custom/hoverech/logo.svg',
+            'website': 'https://iubel.be/IUBELhome/welkom',
+            'court': eclip.court,
+            'year': eclip.year,
+            'decision': eclip.num,
         }
 
     @staticmethod
@@ -131,14 +161,13 @@ class JUST:
 
             collection.append({
                 'name': name,
-                'href' : '%s/ECLI/%s/%s/%s/%s' % (
-                    config['root'],
-                    JUST.country ,
+                'href': '/%s/%s/%s/%s' % (
+                    JUST.country,
                     code,
                     year,
                     name
                 ),
-                'rel' : ''
+                'rel': ''
             })
 
         return collection
@@ -152,17 +181,28 @@ class RVSCDE:
     @staticmethod
     def getYears(config, _code):
         return [
-            {'name' : x,
-             'href' : '%s/ECLI/%s/%s/%s/' % (config['root'], RVSCDE.country , RVSCDE.code, x),
-             'rel':''}
+            {'name': x,
+             'href': '/%s/%s/%s/' % (RVSCDE.country, RVSCDE.code, x),
+             'rel': ''}
             for x in RVSCDE.data.keys()
         ]
 
     @staticmethod
-    def getUrl(config, eclip, forceType=None):
+    async def getUrls(config, eclip, forceType=None):
         name = eclip.num.split('.')
         arr_num = name[1]
-        return f"http://www.raadvst-consetat.be/arr.php?nr={arr_num}"
+        urls = [{
+            'rel': 'default',
+            'href': f"http://www.raadvst-consetat.be/arr.php?nr={arr_num}"
+        }, {
+            'rel': 'pdf',
+            'href': f"http://www.raadvst-consetat.be/arr.php?nr={arr_num}"
+        }]
+
+        if not forceType:
+            return urls
+
+        return urlGetType(forceType, urls)
 
     @staticmethod
     def getCodes(config):
@@ -183,14 +223,13 @@ class RVSCDE:
             ecli = f"ECLI:{RVSCDE.country}:{RVSCDE.code}:{year}:{name}"
             collection.append({
                 'name': name,
-                'href' : '%s/ECLI/%s/%s/%s/%s' % (
-                    config['root'],
-                    RVSCDE.country ,
+                'href': '/%s/%s/%s/%s' % (
+                    RVSCDE.country,
                     code,
                     year,
                     name
                 ),
-                'rel' : ''
+                'rel': ''
             })
 
         return collection
@@ -198,11 +237,11 @@ class RVSCDE:
     @staticmethod
     def getDocData(config, eclip):
         return {
-            'logo' : 'http://www.raadvst-consetat.be/a/s/logo.gif',
-            'website' : 'http://www.raadvst-consetat.be/',
-            'court' : RVSCDE.code,
-            'year' : eclip.year,
-            'decision' : eclip.num,
+            'logo': 'http://www.raadvst-consetat.be/a/s/logo.gif',
+            'website': 'http://www.raadvst-consetat.be/',
+            'court': RVSCDE.code,
+            'year': eclip.year,
+            'decision': eclip.num,
         }
 
     @staticmethod
@@ -212,7 +251,7 @@ class RVSCDE:
         """
         data = {}
         with open('./resources/RVSCDE_def.json', 'r') as f:
-            for line in f :
+            for line in f:
                 rec = json.loads(line)
                 index = str(rec['year'])
                 if index in data:
@@ -220,6 +259,7 @@ class RVSCDE:
                 else:
                     data[index] = [rec]
         RVSCDE.data = data
+
 
 class GHCC:
     country = 'BE'
@@ -229,17 +269,27 @@ class GHCC:
     @staticmethod
     def getYears(config, _code):
         return [
-            {'name' : x,
-             'href' : '%s/ECLI/%s/%s/%s/' % (config['root'], GHCC.country , GHCC.code, x),
-             'rel':''}
+            {'name': x,
+             'href': '/%s/%s/%s/' % (GHCC.country, GHCC.code, x),
+             'rel': ''}
             for x in GHCC.data.keys()
         ]
 
     @staticmethod
-    def getUrl(config, eclip, forceType=None):
+    async def getUrls(config, eclip, forceType=None):
         name = eclip.num.split('.')
         arr_num = name[1]
-        return f"https://www.const-court.be/public/f/{eclip.year}/{eclip.year}-{arr_num}.pdf"
+        urls = [{
+            'rel': 'default',
+            'href': f"https://www.const-court.be/public/f/{eclip.year}/{eclip.year}-{arr_num}.pdf"
+        }, {
+            'rel': 'pdf',
+            'href': f"https://www.const-court.be/public/f/{eclip.year}/{eclip.year}-{arr_num}.pdf"
+        }]
+        if not forceType:
+            return urls
+
+        return urlGetType(forceType, urls)
 
     @staticmethod
     def getCodes(config):
@@ -256,20 +306,19 @@ class GHCC:
             name = '{year}.{num}{lang}'.format(
                 year=record['year'],
                 num=record['num'],
-                lang = 'f' if record['language'] == 'french' else 'n'
+                lang='f' if record['language'] == 'french' else 'n'
             )
             ecli = f"ECLI:{GHCC.country}:{GHCC.code}:{year}:{name}"
 
             collection.append({
                 'name': name,
-                'href' : '%s/ECLI/%s/%s/%s/%s' % (
-                    config['root'],
-                    GHCC.country ,
+                'href': '/%s/%s/%s/%s' % (
+                    GHCC.country,
                     code,
                     year,
                     name
                 ),
-                'rel' : ''
+                'rel': ''
             })
 
         return collection
@@ -277,11 +326,11 @@ class GHCC:
     @staticmethod
     def getDocData(config, eclip):
         return {
-            'logo' : 'https://www.const-court.be/images/titre_index3.gif',
-            'website' : 'https://www.const-court.be/',
-            'court' : GHCC.code,
-            'year' : eclip.year,
-            'decision' : eclip.num,
+            'logo': 'https://www.const-court.be/images/titre_index3.gif',
+            'website': 'https://www.const-court.be/',
+            'court': GHCC.code,
+            'year': eclip.year,
+            'decision': eclip.num,
         }
 
     @staticmethod
@@ -293,7 +342,7 @@ class GHCC:
         """
         data = {}
         with open('./resources/GHCC_def.json', 'r') as f:
-            for line in f :
+            for line in f:
                 rec = json.loads(line)
                 index = str(rec['year'])
                 if index in data:
@@ -301,6 +350,7 @@ class GHCC:
                 else:
                     data[index] = [rec]
         GHCC.data = data
+
 
 RVSCDE.init()
 GHCC.init()
