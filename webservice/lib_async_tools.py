@@ -19,7 +19,7 @@ async def get_file(url):
             num_skips = 0
 
 
-@cached(ttl=3600, key="{url}")
+@cached(ttl=3600)
 async def tika_extract(config, url):
     """
     Extract text from provided file
@@ -75,7 +75,7 @@ async def tika_extract(config, url):
         raise RuntimeError("Failed to contact server %s", tika_server)
 
 
-@cached(ttl=3600, key="{url}")
+@cached(ttl=3600)
 async def urlIsPdf(url):
     r = requests.head(url, verify=False)
     return 'application/pdf' in r.headers.get('content-type')
