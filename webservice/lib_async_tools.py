@@ -63,9 +63,9 @@ async def tika_extract(config, url):
                 # "filename": rawFile.filename,
                 # "content_type": rawFile.content_type,
                 # "size_bytes": rawFile.file.tell(),
-                "html": htmlText,
-                "markdown": mdText,
-                'plaintext': rawText,
+                "html": htmlText.strip(),
+                "markdown": mdText.strip(),
+                'plaintext': rawText.strip(),
             }
 
         raise RuntimeError("Failed to extract text from file")
