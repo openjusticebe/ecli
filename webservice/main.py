@@ -74,8 +74,8 @@ def status_get():
     delta_s = math.floor(delta.total_seconds())
     return {
         'all_systems': 'nominal',
-        'timestamp': now,
-        'online_since': START_TIME,
+        'timestamp': str(now),
+        'online_since': str(START_TIME),
         'online_for_seconds': delta_s,
         'api_version': VERSION,
         'api_counter': COUNTER,
@@ -86,7 +86,7 @@ def negotiate(data, accept):
     # FIXME: Use fastapi router to implement proper content negotiation
     # https://github.com/tiangolo/fastapi/issues/521
     if 'text/html' in accept:
-        return HTMLResponse(content_to_html(data), status_code=200)
+        return HTMLResponse(content_to_html(config, data), status_code=200)
     if 'application/json' in accept:
         return data
     # FIXME: Not so fast ! https://github.com/florimondmanca/msgpack-asgi

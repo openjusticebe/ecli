@@ -7,8 +7,10 @@ ECLI_MASK = re.compile('ECLI:(?P<country>\w*):(?P<code>\w*):(?P<year>\d*):(?P<id
 ECLI = namedtuple('ECLI', ['country', 'court', 'year', 'num', 'raw'])
 
 
-def content_to_html(data):
-    out = ['<!DOCTYPE html>\n<html lang="en"><body>']
+def content_to_html(config, data):
+    out = ['<!DOCTYPE html>\n<html lang="en"><body style="font-family:verdana">']
+    out.append('<p>⚠What you are seeing is raw technical data formatted in a human readable way. It is not meant to be user-friendly.')
+    self = False
     if 'title' in data:
         out.append('<h1>%s</h1>' % data['title'])
 
@@ -17,6 +19,8 @@ def content_to_html(data):
         out.append('<dl>')
         for link in data['links']:
             out.append('<dt>{rel}</dt><dd><a href="{href}">{href}</a></dd>'.format(**link))
+            if link['rel'] == 'self':
+                self = '%s%s' % (config['root'], link['href'])
         out.append('</dl>')
 
     if 'content' in data:
@@ -54,6 +58,12 @@ def content_to_html(data):
         out.append('<h2>Status :</h2>')
         out.append("<pre>%s</pre>" % yaml.dump(data['status'], indent=2))
 
+    out.append('<h2>JSON preview</h2>')
+    out.append('<p>Set "application/json" in your request\'s Accept header to get the result below.</p>')
+    if self:
+        out.append(f'<pre>curl {self} -H "Accept: application/json"</pre>')
+
+    out.extend(['<pre style="background-color:#ccc;padding:1rem">', json.dumps(data, indent=2), '</pre>'])
     out.append('</body></html>')
 
     return "\n".join(out)
