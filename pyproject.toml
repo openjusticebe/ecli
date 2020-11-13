@@ -20,6 +20,7 @@ beautifulsoup4 = "^4.9.3"
 html5lib = "^1.1"
 lxml = "^4.6.1"
 aiocache = "^0.11.1"
+graphene = "^2.1.8"
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.6.0"

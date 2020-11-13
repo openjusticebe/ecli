@@ -12,17 +12,20 @@ import pytz
 import uvicorn
 import msgpack
 import requests
+import graphene
 from typing import Optional
 from fastapi import Depends, FastAPI, BackgroundTasks, HTTPException, Header
 from fastapi.responses import RedirectResponse, HTMLResponse, PlainTextResponse
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field, IPvAnyAddress, Json, PositiveInt
+from starlette.graphql import GraphQLApp
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
 from datetime import datetime
 from webservice.lib_misc import content_to_html, content_to_plain, parseECLI, buildECLI
 import webservice.lib_async_tools as a_tools
 import webservice.lib_collections as collections
+from webservice.lib_graphql import Query
 
 sys.path.append(os.path.dirname(__file__))
 VERSION = "0.1.1"
@@ -47,7 +50,7 @@ config = {
         'log_level': os.getenv('LOG_LEVEL', 'info'),
     },
     'log_level': os.getenv('LOG_LEVEL', 'info'),
-    'proxy_prefix': os.getenv('PROXY_PREFIX', '/'),
+    'proxy_prefix': os.getenv('PROXY_PREFIX', ''),
     'root': os.getenv('ROOT_DOMAIN', 'example.com'),
     'tikaserver': os.getenv('TIKA_SERVER', '0.0.0.0:9998'),
 }
@@ -57,15 +60,6 @@ if config['log_level'] == 'debug':
 
 logger.debug('Debug activated')
 logger.debug('Config values: \n%s', yaml.dump(config))
-
-app = FastAPI(root_path=config['proxy_prefix'])
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
-)
 
 
 def status_get():
@@ -92,13 +86,26 @@ def negotiate(data, accept):
     # FIXME: Not so fast ! https://github.com/florimondmanca/msgpack-asgi
     # if 'application/msgpack' in accept:
     #     return msgpack.packb(data, use_bin_type=True)
-    return PlainTextResponse(content_to_plain(data))
+
+    # By default, for the time being, answer in JSON
+    return data
 
 
 def count():
     # FIXME: this should rather become a decorator
     global COUNTER
     COUNTER += 1
+
+
+app = FastAPI(root_path=config['proxy_prefix'])
+app.add_route("/gql", GraphQLApp(schema=graphene.Schema(query=Query)))
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 
 
 # ############################################################### SERVER ROUTES
