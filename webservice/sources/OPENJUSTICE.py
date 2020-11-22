@@ -36,16 +36,25 @@ class OPENJUSTICE:
 
     @staticmethod
     def getCodes(config: dict) -> List[str]:
-        return oj_list_query(config, LEVEL_COURT, {'country': 'BE'})
+        try:
+            return oj_list_query(config, LEVEL_COURT, {'country': 'BE'})
+        except requests.exceptions.HTTPError:
+            return []
 
     @staticmethod
     def getYears(config: dict, code: str) -> List[str]:
-        return [str(y) for y in oj_list_query(config, LEVEL_YEAR, {'country': 'BE', 'court': code})]
+        try:
+            return [str(y) for y in oj_list_query(config, LEVEL_YEAR, {'country': 'BE', 'court': code})]
+        except requests.exceptions.HTTPError:
+            return []
 
     @staticmethod
-    def checkYear(config, year: int, code: str) -> List[str]:
-        years = oj_list_query(config, LEVEL_YEAR, {'country': 'BE', 'court': code})
-        return int(year) in years
+    def checkYear(config, year: int, code: str) -> bool:
+        try:
+            years = oj_list_query(config, LEVEL_YEAR, {'country': 'BE', 'court': code})
+            return int(year) in years
+        except requests.exceptions.HTTPError:
+            return False
 
     @staticmethod
     def getDocuments(config: dict, code: str, year: int) -> List[str]:
@@ -54,6 +63,8 @@ class OPENJUSTICE:
             LEVEL_DOCUMENT,
             {'country': 'BE', 'court': code, 'year': year}
         )
+        except requests.exceptions.HTTPError:
+            return []
 
     @staticmethod
     async def getUrls(config: dict, eclip: NamedTuple, forceType: bool=False) -> List[dict]:
