@@ -260,7 +260,7 @@ def nav_ecli_country(COUNTRY, accept: Optional[str] = Header(None)):
     response = {
         'status': status_get(),
         'links': links,
-        'collection': collections.country(config, COUNTRY),
+        'collection': collections.listCourts(config, COUNTRY),
         'content': [
         ]
     }
@@ -285,8 +285,6 @@ def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
     if CODE not in config['ecli'][COUNTRY]:
         raise HTTPException(status_code=400, detail=f"Court '{CODE}' not available in '{COUNTRY}'")
 
-    Court = collections.getCourt(config, COUNTRY, CODE)
-
     links = []
     links.append({'rel': 'self', 'href': "/%s/%s/" % (COUNTRY, CODE)})
     links.append({'rel': 'parent', 'href': "/%s/" % (COUNTRY)})
@@ -295,7 +293,7 @@ def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
     response = {
         'status': status_get(),
         'links': links,
-        'collection': Court.getYears(config, CODE),
+        'collection': collections.listYears(config, COUNTRY, CODE),
         'content': [
         ]
     }
@@ -320,12 +318,6 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     if CODE not in config['ecli'][COUNTRY]:
         raise HTTPException(status_code=400, detail=f"Court '{CODE}' not available in '{COUNTRY}'")
 
-    Court = collections.getCourt(config, COUNTRY, CODE)
-
-    # Check if year is in court supported years list
-    if not Court.checkYear(YEAR, CODE):
-        raise HTTPException(status_code=400, detail=f"Year '{YEAR}' not available in '{COUNTRY}', Court '{CODE}'")
-
     links = []
     links.append({'rel': 'self', 'href': "/%s/%s/%s/" % (COUNTRY, CODE, YEAR)})
     links.append({'rel': 'parent', 'href': "/%s/%s/" % (COUNTRY, CODE)})
@@ -334,7 +326,7 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     response = {
         'status': status_get(),
         'links': links,
-        'collection': Court.getDocuments(config, CODE, YEAR),
+        'collection': collections.listDocuments(config, COUNTRY, CODE, YEAR),
         'content': [
         ]
     }

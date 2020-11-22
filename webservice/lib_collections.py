@@ -2,6 +2,8 @@ import json
 import re
 from webservice.lib_misc import parseECLI
 from webservice.lib_async_tools import urlIsPdf
+import logging
+logger = logging.getLogger(__name__)
 
 DEFAULT = 'default'
 PDF = 'pdf'
@@ -17,8 +19,26 @@ def root(config):
     ]
 
 
-def country(config, country):
-    codes = RVSCDE.getCodes(config) + GHCC.getCodes(config) + JUST.getCodes(config)
+def sources():
+    # FIXME: dirty, make cleaner ;)
+    yield RVSCDE
+    yield GHCC
+    yield JUST
+
+
+def getCourt(config, country, court):
+    if country == 'BE' and court == 'RSCE':
+        return RVSCDE
+    if country == 'BE' and court == 'GHCC':
+        return GHCC
+    if country == 'BE':
+        return JUST
+
+
+def listCourts(config, country):
+    codes = set()
+    for source in sources():
+        codes = codes.union(source.getCodes(config))
     cfg = config['ecli'][country]
     base = [
         {'name': cfg[x]['name'],
@@ -27,23 +47,50 @@ def country(config, country):
         for x in codes
     ]
 
-    # for code in JUST.getCodes(config):
-    #     base.append({
-    #         'name': code,
-    #         'href': '%s/%s/%s/' % (config['root'], country, code),
-    #         'rel':''
-    #     })
+    base = sorted(base, key=lambda x: x['name'])
 
     return base
 
 
-def getCourt(config, country, court):
-    if country == 'BE' and court == 'RVSCDE':
-        return RVSCDE
-    if country == 'BE' and court == 'GHCC':
-        return GHCC
-    if country == 'BE':
-        return JUST
+def listYears(config, country, court):
+    years = set()
+    for source in sources():
+        if court in source.getCodes(config):
+            years = years.union(source.getYears(config, court))
+
+    base = [
+        {'name': y,
+         'href': '/%s/%s/%s/' % (country, court, y),
+         'rel': ''}
+        for y in years
+    ]
+
+    base = sorted(base, key=lambda x: x['name'], reverse=True)
+
+    return base
+
+
+def listDocuments(config, country, court, year):
+    docs = set()
+    for source in sources():
+        if court in source.getCodes(config) and year in source.getYears(config, court):
+            docs = docs.union(source.getDocuments(config, court, year))
+
+    result = [
+        {'name': name,
+         'href': '/%s/%s/%s/%s' % (
+             JUST.country,
+             court,
+             year,
+             name
+         ),
+         'rel': ''}
+        for name in docs
+    ]
+
+    result = sorted(result, key=lambda x: x['name'], reverse=True)
+
+    return result
 
 
 def getECLICourt(config, ecli):
@@ -53,16 +100,18 @@ def getECLICourt(config, ecli):
     if ecli.country != 'BE':
         return False
 
-    if ecli.court in RVSCDE.getCodes(config):
+    if ecli.court in RVSCDE.getCodes(config) and RVSCDE.docMatch(config, ecli.num):
+        logger.info('RVSCDE ECLI match')
         return RVSCDE
 
-    if ecli.court in GHCC.getCodes(config):
+    if ecli.court in GHCC.getCodes(config) and GHCC.docMatch(config, ecli.num):
+        logger.info('GHCC ECLI match')
         return GHCC
 
     if ecli.court in JUST.getCodes(config):
         return JUST
 
-    return False
+    return JUST
 
 
 def urlGetType(ftype, urls):
@@ -131,13 +180,7 @@ class JUST:
 
     @staticmethod
     def getYears(config, code):
-        return [
-            {'name': x,
-             'href': '/%s/%s/%s/' % (JUST.country, code, x),
-             'rel': ''}
-            for x in JUST.data[code].keys()
-
-        ]
+        return JUST.data[code].keys()
 
     @staticmethod
     def checkYear(year, code):
@@ -150,42 +193,28 @@ class JUST:
             'website': 'https://iubel.be/IUBELhome/welkom',
             'court': eclip.court,
             'year': eclip.year,
+            'source': 'IUBEL',
             'decision': eclip.num,
         }
 
     @staticmethod
     def getDocuments(config, code, year):
-        collection = []
-        for name in JUST.data[code][year]:
-            ecli = f"ECLI:{JUST.country}:{code}:{year}:{name}"
-
-            collection.append({
-                'name': name,
-                'href': '/%s/%s/%s/%s' % (
-                    JUST.country,
-                    code,
-                    year,
-                    name
-                ),
-                'rel': ''
-            })
-
-        return collection
+        return JUST.data[code][year]
 
 
 class RVSCDE:
     country = 'BE'
-    code = 'RVSCDE'
+    code = 'RSCE'
     data = []
 
     @staticmethod
+    def docMatch(config, num):
+        mask = re.compile('^\w{3}\.\d{1,6}$')
+        return bool(mask.match(num))
+
+    @staticmethod
     def getYears(config, _code):
-        return [
-            {'name': x,
-             'href': '/%s/%s/%s/' % (RVSCDE.country, RVSCDE.code, x),
-             'rel': ''}
-            for x in RVSCDE.data.keys()
-        ]
+        return RVSCDE.data.keys()
 
     @staticmethod
     async def getUrls(config, eclip, forceType=None):
@@ -220,17 +249,7 @@ class RVSCDE:
                 dtype=record['type'].upper(),
                 num=record['num']
             )
-            ecli = f"ECLI:{RVSCDE.country}:{RVSCDE.code}:{year}:{name}"
-            collection.append({
-                'name': name,
-                'href': '/%s/%s/%s/%s' % (
-                    RVSCDE.country,
-                    code,
-                    year,
-                    name
-                ),
-                'rel': ''
-            })
+            collection.append(name)
 
         return collection
 
@@ -240,6 +259,7 @@ class RVSCDE:
             'logo': 'http://www.raadvst-consetat.be/a/s/logo.gif',
             'website': 'http://www.raadvst-consetat.be/',
             'court': RVSCDE.code,
+            'source': 'RSCE',
             'year': eclip.year,
             'decision': eclip.num,
         }
@@ -267,13 +287,13 @@ class GHCC:
     data = []
 
     @staticmethod
+    def docMatch(config, num):
+        mask = re.compile('^\d{4}\.\d{1,4}(f|n|d)?$')
+        return bool(mask.match(num))
+
+    @staticmethod
     def getYears(config, _code):
-        return [
-            {'name': x,
-             'href': '/%s/%s/%s/' % (GHCC.country, GHCC.code, x),
-             'rel': ''}
-            for x in GHCC.data.keys()
-        ]
+        return GHCC.data.keys()
 
     @staticmethod
     async def getUrls(config, eclip, forceType=None):
@@ -308,18 +328,7 @@ class GHCC:
                 num=record['num'],
                 lang='f' if record['language'] == 'french' else 'n'
             )
-            ecli = f"ECLI:{GHCC.country}:{GHCC.code}:{year}:{name}"
-
-            collection.append({
-                'name': name,
-                'href': '/%s/%s/%s/%s' % (
-                    GHCC.country,
-                    code,
-                    year,
-                    name
-                ),
-                'rel': ''
-            })
+            collection.append(name)
 
         return collection
 
@@ -329,6 +338,7 @@ class GHCC:
             'logo': 'https://www.const-court.be/images/titre_index3.gif',
             'website': 'https://www.const-court.be/',
             'court': GHCC.code,
+            'source': 'GHCC',
             'year': eclip.year,
             'decision': eclip.num,
         }
@@ -352,6 +362,7 @@ class GHCC:
         GHCC.data = data
 
 
-RVSCDE.init()
-GHCC.init()
-JUST.init()
+for court in sources():
+    court.init()
+    court.init()
+    court.init()
