@@ -86,3 +86,10 @@ def parseECLI(ecli, noException=False):
 
 def buildECLI(country, code, year, num):
     return parseECLI(f"ECLI:{country}:{code}:{year}:{num}")
+
+
+def urlGetType(ftype, urls):
+    for url in urls:
+        if url['rel'] == ftype:
+            return url['href']
+    return False
