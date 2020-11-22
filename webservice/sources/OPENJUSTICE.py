@@ -58,11 +58,12 @@ class OPENJUSTICE:
 
     @staticmethod
     def getDocuments(config: dict, code: str, year: int) -> List[str]:
-        return oj_list_query(
-            config,
-            LEVEL_DOCUMENT,
-            {'country': 'BE', 'court': code, 'year': year}
-        )
+        try:
+            return oj_list_query(
+                config,
+                LEVEL_DOCUMENT,
+                {'country': 'BE', 'court': code, 'year': year}
+            )
         except requests.exceptions.HTTPError:
             return []
 
