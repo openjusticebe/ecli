@@ -21,6 +21,8 @@ def root(config):
 
 def sources():
     # FIXME: dirty, make cleaner ;)
+    # XXX: Improvement: add params to do checks within this function
+    # Instead of outside
     yield RVSCDE
     yield GHCC
     yield JUST
