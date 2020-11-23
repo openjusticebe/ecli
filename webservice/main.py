@@ -53,6 +53,9 @@ config = {
     'proxy_prefix': os.getenv('PROXY_PREFIX', ''),
     'root': os.getenv('ROOT_DOMAIN', 'example.com'),
     'tikaserver': os.getenv('TIKA_SERVER', '0.0.0.0:9998'),
+    'openjustice' : {
+        'doc_api': os.getenv('OJ_DOC_API', 'http://localhost:5000'),
+    }
 }
 
 if config['log_level'] == 'debug':
@@ -226,6 +229,9 @@ def nav_ecli_root(accept: Optional[str] = Header(None)):
             'links': [
                 {'rel': 'ecli documentation', 'href': "https://eur-lex.europa.eu/content/help/faq/ecli.html"},
                 {'rel': 'API documentation', 'href': "/docs"},
+                {'rel': 'OpenJustice.be', 'href': "https://openjustice.be"},
+                {'rel': 'contact', 'href': "mailto:team@openjustice.be"},
+                {'rel': 'twitter', 'href': "https://twitter.com/OpenjusticeB"},
             ],
             'data':
             {
@@ -260,7 +266,7 @@ def nav_ecli_country(COUNTRY, accept: Optional[str] = Header(None)):
     response = {
         'status': status_get(),
         'links': links,
-        'collection': collections.country(config, COUNTRY),
+        'collection': collections.listCourts(config, COUNTRY),
         'content': [
         ]
     }
@@ -285,8 +291,6 @@ def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
     if CODE not in config['ecli'][COUNTRY]:
         raise HTTPException(status_code=400, detail=f"Court '{CODE}' not available in '{COUNTRY}'")
 
-    Court = collections.getCourt(config, COUNTRY, CODE)
-
     links = []
     links.append({'rel': 'self', 'href': "/%s/%s/" % (COUNTRY, CODE)})
     links.append({'rel': 'parent', 'href': "/%s/" % (COUNTRY)})
@@ -295,7 +299,7 @@ def nav_ecli_court(COUNTRY, CODE, accept: Optional[str] = Header(None)):
     response = {
         'status': status_get(),
         'links': links,
-        'collection': Court.getYears(config, CODE),
+        'collection': collections.listYears(config, COUNTRY, CODE),
         'content': [
         ]
     }
@@ -320,12 +324,6 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     if CODE not in config['ecli'][COUNTRY]:
         raise HTTPException(status_code=400, detail=f"Court '{CODE}' not available in '{COUNTRY}'")
 
-    Court = collections.getCourt(config, COUNTRY, CODE)
-
-    # Check if year is in court supported years list
-    if not Court.checkYear(YEAR, CODE):
-        raise HTTPException(status_code=400, detail=f"Year '{YEAR}' not available in '{COUNTRY}', Court '{CODE}'")
-
     links = []
     links.append({'rel': 'self', 'href': "/%s/%s/%s/" % (COUNTRY, CODE, YEAR)})
     links.append({'rel': 'parent', 'href': "/%s/%s/" % (COUNTRY, CODE)})
@@ -334,7 +332,7 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     response = {
         'status': status_get(),
         'links': links,
-        'collection': Court.getDocuments(config, CODE, YEAR),
+        'collection': collections.listDocuments(config, COUNTRY, CODE, YEAR),
         'content': [
         ]
     }
@@ -364,7 +362,7 @@ async def nav_ecli_year(COUNTRY, CODE, YEAR, NUM, accept: Optional[str] = Header
     Court = collections.getECLICourt(config, eclip)
 
     # Check if year is in court supported years list
-    if not Court.checkYear(YEAR, CODE):
+    if not Court.checkYear(config, YEAR, CODE):
         raise HTTPException(status_code=400, detail=f"Year '{YEAR}' not available in '{COUNTRY}', Court '{CODE}'")
 
     links = []
@@ -385,6 +383,10 @@ async def nav_ecli_year(COUNTRY, CODE, YEAR, NUM, accept: Optional[str] = Header
             content_links.append({'rel': 'html', 'href': "/html/%s" % (eclip.raw)})
         if url['rel'] == 'meta':
             content_links.append({'rel': 'meta', 'href': url['href']})
+        if url['rel'] == 'html':
+            content_links.append({'rel': 'html', 'href': url['href']})
+        if url['rel'] == 'txt':
+            content_links.append({'rel': 'txt', 'href': url['href']})
 
     response = {
         'status': status_get(),
