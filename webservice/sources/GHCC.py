@@ -1,8 +1,7 @@
 import json
 import re
-from webservice.lib_async_tools import urlIsPdf
 import logging
-from typing import List, NamedTuple
+from typing import List
 import webservice.lib_misc as lm
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ class GHCC:
 
     @staticmethod
     def docMatch(config, num):
-        mask = re.compile('^\d{4}\.\d{1,4}(f|n|d)?$')
+        mask = re.compile(r'^\d{4}\.\d{1,4}(f|n|d)?$')
         return bool(mask.match(num))
 
     @staticmethod

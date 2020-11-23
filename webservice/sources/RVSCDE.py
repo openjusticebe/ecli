@@ -1,8 +1,7 @@
 import json
 import re
 import webservice.lib_misc as lm
-from webservice.lib_async_tools import urlIsPdf
-from typing import List, NamedTuple
+from typing import List
 import logging
 logger = logging.getLogger(__name__)
 
@@ -14,7 +13,7 @@ class RVSCDE:
 
     @staticmethod
     def docMatch(config, num):
-        mask = re.compile('^\w{3}\.\d{1,6}$')
+        mask = re.compile(r'^\w{3}\.\d{1,6}$')
         return bool(mask.match(num))
 
     @staticmethod

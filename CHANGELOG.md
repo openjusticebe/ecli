@@ -7,6 +7,9 @@ This project adheres to [Semantic Versioning](http://semver.org/)
 and to the [CHANGELOG recommendations](http://keepachangelog.com/).
 ## Alpha Development
 
+### [0.2.1] - (2020-11-23)
+- Code refactoring & Cleanup
+
 ### [0.2.0] - (2020-11-20)
 - Merge ressources offered by different sources
 - Ordered output

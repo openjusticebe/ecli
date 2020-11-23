@@ -1,8 +1,6 @@
-import json
-import re
 from webservice.lib_async_tools import urlIsPdf
 import webservice.lib_misc as lm
-from typing import List, NamedTuple
+from typing import List
 import logging
 logger = logging.getLogger(__name__)
 
@@ -86,5 +84,3 @@ class JUST:
     @staticmethod
     def getDocuments(config: dict, code: str, year: int) -> List[str]:
         return JUST.data[code][str(year)]
-
-

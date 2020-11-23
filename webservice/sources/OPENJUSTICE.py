@@ -1,7 +1,6 @@
 import json
 import re
 import webservice.lib_misc as lm
-from webservice.lib_async_tools import urlIsPdf
 import logging
 import requests
 from typing import List, NamedTuple
@@ -31,21 +30,23 @@ class OPENJUSTICE:
     @staticmethod
     def docMatch(config: dict, num: str) -> bool:
         # Anything terminating with .OJ
-        mask = re.compile('^.*\.OJ$')
+        mask = re.compile(r'^.*\.OJ$')
         return bool(mask.match(num))
 
     @staticmethod
     def getCodes(config: dict) -> List[str]:
         try:
             return oj_list_query(config, LEVEL_COURT, {'country': 'BE'})
-        except requests.exceptions.HTTPError:
+        except requests.exceptions.HTTPError as e:
+            logger.exception(e)
             return []
 
     @staticmethod
     def getYears(config: dict, code: str) -> List[str]:
         try:
             return [str(y) for y in oj_list_query(config, LEVEL_YEAR, {'country': 'BE', 'court': code})]
-        except requests.exceptions.HTTPError:
+        except requests.exceptions.HTTPError as e:
+            logger.exception(e)
             return []
 
     @staticmethod
@@ -53,7 +54,8 @@ class OPENJUSTICE:
         try:
             years = oj_list_query(config, LEVEL_YEAR, {'country': 'BE', 'court': code})
             return int(year) in years
-        except requests.exceptions.HTTPError:
+        except requests.exceptions.HTTPError as e:
+            logger.exception(e)
             return False
 
     @staticmethod
@@ -68,7 +70,7 @@ class OPENJUSTICE:
             return []
 
     @staticmethod
-    async def getUrls(config: dict, eclip: NamedTuple, forceType: bool=False) -> List[dict]:
+    async def getUrls(config: dict, eclip: NamedTuple, forceType: bool = False) -> List[dict]:
         # FIXME: add raw text output
         server = config['openjustice']['doc_api']
 

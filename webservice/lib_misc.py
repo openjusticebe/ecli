@@ -1,9 +1,10 @@
 import re
 import yaml
 import json
-import requests
 from collections import namedtuple
-ECLI_MASK = re.compile('ECLI:(?P<country>\w*):(?P<code>\w*):(?P<year>\d*):(?P<id>.*)$')
+import logging
+logger = logging.getLogger(__name__)
+ECLI_MASK = re.compile(r'ECLI:(?P<country>\w*):(?P<code>\w*):(?P<year>\d*):(?P<id>.*)$')
 ECLI = namedtuple('ECLI', ['country', 'court', 'year', 'num', 'raw'])
 
 
@@ -79,7 +80,7 @@ def parseECLI(ecli, noException=False):
         if noException:
             return False
         else:
-            print(ecli)
+            logger.debug("Bad ecli: %s", ecli)
             raise RuntimeError("Bad ECLI")
     return ECLI(m.group('country'), m.group('code'), m.group('year'), m.group('id'), ecli)
 

@@ -126,6 +126,3 @@ def getECLICourt(config, ecli):
         return JUST
 
     return JUST
-
-
-

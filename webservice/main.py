@@ -1,34 +1,27 @@
 #!/usr/bin/env python3
 import argparse
-import json
 import logging
 import math
 import os
 import sys
 import toml
-import uuid
 import yaml
 import pytz
 import uvicorn
-import msgpack
-import requests
 import graphene
 from typing import Optional
-from fastapi import Depends, FastAPI, BackgroundTasks, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import RedirectResponse, HTMLResponse, PlainTextResponse
-from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, Field, IPvAnyAddress, Json, PositiveInt
 from starlette.graphql import GraphQLApp
 from starlette.middleware.cors import CORSMiddleware
-from starlette.requests import Request
 from datetime import datetime
-from webservice.lib_misc import content_to_html, content_to_plain, parseECLI, buildECLI
+from webservice.lib_misc import content_to_html, parseECLI, buildECLI
 import webservice.lib_async_tools as a_tools
 import webservice.lib_collections as collections
 from webservice.lib_graphql import Query
 
 sys.path.append(os.path.dirname(__file__))
-VERSION = "0.1.1"
+VERSION = "0.2.1"
 START_TIME = datetime.now(pytz.utc)
 COUNTER = 0
 
@@ -53,7 +46,7 @@ config = {
     'proxy_prefix': os.getenv('PROXY_PREFIX', ''),
     'root': os.getenv('ROOT_DOMAIN', 'example.com'),
     'tikaserver': os.getenv('TIKA_SERVER', '0.0.0.0:9998'),
-    'openjustice' : {
+    'openjustice': {
         'doc_api': os.getenv('OJ_DOC_API', 'http://localhost:5000'),
     }
 }
@@ -158,11 +151,11 @@ async def ecli(ECLI):
     court = collections.getECLICourt(config, eclip)
     url = await court.getUrls(config, eclip, collections.PDF)
     if not await a_tools.urlIsPdf(url):
-        raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
+        raise HTTPException(status_code=412, detail="Document not available in this format, working on it !")
     data = await a_tools.tika_extract(config, url)
     if data and 'markdown' in data:
         return PlainTextResponse(data['markdown'])
-    raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
+    raise HTTPException(status_code=412, detail="Document not available in this format, working on it !")
 
 
 @app.get("/html/{ECLI}")
@@ -181,11 +174,11 @@ async def ecli(ECLI):
     court = collections.getECLICourt(config, eclip)
     url = await court.getUrls(config, eclip, collections.PDF)
     if not await a_tools.urlIsPdf(url):
-        raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
+        raise HTTPException(status_code=412, detail="Document not available in this format, working on it !")
     data = await a_tools.tika_extract(config, url)
     if data and 'html' in data:
         return HTMLResponse(data['html'])
-    raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
+    raise HTTPException(status_code=412, detail="Document not available in this format, working on it !")
 
 
 @app.get("/pdf/{ECLI}")
@@ -204,7 +197,7 @@ async def ecli(ECLI):
     court = collections.getECLICourt(config, eclip)
     url = await court.getUrls(config, eclip, collections.PDF)
     if not await a_tools.urlIsPdf(url):
-        raise HTTPException(status_code=412, detail=f"Document not available in this format, working on it !")
+        raise HTTPException(status_code=412, detail="Document not available in this format, working on it !")
     return RedirectResponse(url)
 
 
@@ -370,8 +363,6 @@ async def nav_ecli_year(COUNTRY, CODE, YEAR, NUM, accept: Optional[str] = Header
     links.append({'rel': 'parent', 'href': "/%s/%s/%s/" % (COUNTRY, CODE, YEAR)})
     links.append({'rel': 'root', 'href': "/"})
 
-    docdata = Court.getDocData(config, eclip)
-
     urls = await Court.getUrls(config, eclip)
     content_links = []
     for url in urls:
@@ -432,8 +423,8 @@ def main():
         config['log_level'] = 'debug'
         config['server']['log_level'] = 'debug'
         logger.debug('Arguments: %s', args)
-        logger.debug('config: %s', yaml.dump(config, indent=2))
-        logger.debug('config: %s', toml.dumps(config))
+        logger.info('config: %s', yaml.dump(config, indent=2))
+        # logger.debug('config: %s', toml.dumps(config))
 
     uvicorn.run(
         app,

@@ -1,22 +1,10 @@
 import requests
-import json
 import urllib
 import logging
 import ssl
 from bs4 import BeautifulSoup
-from aiocache import cached
 
 logger = logging.getLogger(__name__)
-
-
-async def get_file(url):
-    with urllib.request.urlopen(url, timeout=3) as response, open(file_name, 'wb') as out_file:
-        # No status code support, just read first bytes of response body
-        if response.status == 200:
-            logger.info('Written arr # %s to %s', i, file_name)
-            shutil.copyfileobj(response, out_file)
-            files.append(file_name)
-            num_skips = 0
 
 
 async def tika_extract(config, url):
