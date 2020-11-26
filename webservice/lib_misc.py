@@ -11,7 +11,7 @@ ECLI = namedtuple('ECLI', ['country', 'court', 'year', 'num', 'raw'])
 def content_to_html(config, data):
     out = ['<!DOCTYPE html>\n<html lang="en"><body>']
     out.append('<style>.row { display: flex} .column { flex: 50%; } .warning { color: red } .info { color: green } pre { font-family: monospace }</style>')
-    out.append('<p class="warning">⚠ What you are seeing is raw technical data formatted in a human readable way. It is not meant to be user-friendly.')
+    out.append('<p class="warning">⚠ What you are seeing is raw technical data formatted in a human readable way. It is not meant to be user-friendly. To access a more user-friendy service, please access to <a href="http://omdat.openjustice.lltl.be/">Omdat</a></p>')
     self = False
     if 'title' in data:
         out.append('<h1>%s</h1>' % data['title'])
