@@ -317,14 +317,14 @@ def nav_ecli_year(COUNTRY, CODE, YEAR, accept: Optional[str] = Header(None)):
     if CODE not in config['ecli'][COUNTRY]:
         raise HTTPException(status_code=400, detail=f"Court '{CODE}' not available in '{COUNTRY}'")
 
-    links = []
-    links.append({'rel': 'self', 'href': "/%s/%s/%s/" % (COUNTRY, CODE, YEAR)})
-    links.append({'rel': 'parent', 'href': "/%s/%s/" % (COUNTRY, CODE)})
-    links.append({'rel': 'root', 'href': "/"})
+    nav_links = []
+    nav_links.append({'rel': 'self', 'href': "/%s/%s/%s/" % (COUNTRY, CODE, YEAR)})
+    nav_links.append({'rel': 'parent', 'href': "/%s/%s/" % (COUNTRY, CODE)})
+    nav_links.append({'rel': 'root', 'href': "/"})
 
     response = {
         'status': status_get(),
-        'links': links,
+        'nav_links': nav_links,
         'collection': collections.listDocuments(config, COUNTRY, CODE, YEAR),
         'content': [
         ]

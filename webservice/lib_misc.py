@@ -20,7 +20,7 @@ def content_to_html(config, data):
     out.append('<div class="column">')
 
     if 'links' in data:
-        out.append('<h2>Links</h2>')
+        out.append('<h2>Navigation</h2>')
         out.append('<dl>')
         for link in data['links']:
             out.append('<dt>{rel}</dt><dd><a href="{href}">{href}</a></dd>'.format(**link))
