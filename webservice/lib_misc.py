@@ -9,14 +9,18 @@ ECLI = namedtuple('ECLI', ['country', 'court', 'year', 'num', 'raw'])
 
 
 def content_to_html(config, data):
-    out = ['<!DOCTYPE html>\n<html lang="en"><body style="font-family:verdana">']
-    out.append('<p>⚠What you are seeing is raw technical data formatted in a human readable way. It is not meant to be user-friendly.')
+    out = ['<!DOCTYPE html>\n<html lang="en"><body>']
+    out.append('<style>.row { display: flex} .column { flex: 50%; } .warning { color: red } .info { color: green } pre { font-family: monospace }</style>')
+    out.append('<p class="warning">⚠ What you are seeing is raw technical data formatted in a human readable way. It is not meant to be user-friendly. To access a more user-friendy service, please access to <a href="http://omdat.openjustice.lltl.be/">Omdat</a></p>')
     self = False
     if 'title' in data:
         out.append('<h1>%s</h1>' % data['title'])
+    out.append('<div class="row">')
+
+    out.append('<div class="column">')
 
     if 'links' in data:
-        out.append('<h2>Links :</h2>')
+        out.append('<h2>Links</h2>')
         out.append('<dl>')
         for link in data['links']:
             out.append('<dt>{rel}</dt><dd><a href="{href}">{href}</a></dd>'.format(**link))
@@ -25,7 +29,7 @@ def content_to_html(config, data):
         out.append('</dl>')
 
     if 'content' in data:
-        out.append('<h2>Content :</h2>')
+        out.append('<h2>Content</h2>')
 
         dc = data['content']
         if 'data' in dc:
@@ -42,29 +46,30 @@ def content_to_html(config, data):
                 ))
 
         if 'links' in dc:
-            out.append('<h3>Content links :</h3>')
+            out.append('<h3>Links</h3>')
             out.append('<dl>')
             for link in dc['links']:
                 out.append('<dt>{rel}</dt><dd><a href="{href}" rel="nofollow" target="_blank">{href}</a></dd>'.format(**link))
             out.append('</dl>')
 
     if 'collection' in data:
-        out.append('<h2>Collection :</h2>')
+        out.append('<h2>Collection</h2>')
         out.append('<dl>')
         for link in data['collection']:
             out.append('<dt>{name}</dt><dd><a href="{href}" rel="{rel}">{href}</a></dd>'.format(**link))
         out.append('</dl>')
+    out.append('</div>')
 
-    if 'status' in data:
-        out.append('<h2>Status :</h2>')
-        out.append("<pre>%s</pre>" % yaml.dump(data['status'], indent=2))
-
-    out.append('<h2>JSON preview</h2>')
+    out.append('<div class="column">')
+    out.append('<div class="box"><h2>JSON preview</h2>')
     out.append('<p>Set "application/json" in your request\'s Accept header to get the result below.</p>')
     if self:
-        out.append(f'<pre>curl {self} -H "Accept: application/json"</pre>')
+        out.append(f'<pre class="info">curl {self} -H "Accept: application/json"</pre>')
 
-    out.extend(['<pre style="background-color:#ccc;padding:1rem">', json.dumps(data, indent=2), '</pre>'])
+    out.extend(['<pre>', json.dumps(data, indent=2), '</pre>'])
+    out.append('</div>')
+    out.append('</div>')
+
     out.append('</body></html>')
 
     return "\n".join(out)
