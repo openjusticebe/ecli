@@ -140,6 +140,10 @@ code="BE"
             code = "TCHAI"
             name = "Tribunal de Commerce du Hainaut"
 
+        [ecli.BE.TPBRL]
+            code = "TCHAI"
+            name = "Tribunal de police francophone de Bruxelles"
+
         # Encoding errors
         [ecli.BE.TELIE]
             code = "TELIE"
